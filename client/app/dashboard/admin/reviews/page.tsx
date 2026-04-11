@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -47,6 +48,18 @@ const reviews = [
     status: "Published",
   }
 ]
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function Reviews() {
   return (
@@ -139,7 +152,28 @@ export default function Reviews() {
                    "{review.comment}"
                   </p>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="h-7 text-xs">Reply</Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-7 text-xs">Reply</Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Reply to {review.patient}</DialogTitle>
+                          <DialogDescription>
+                            Write a public response to this review.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="reply">Your Response</Label>
+                            <Textarea id="reply" placeholder="Thank you for your feedback..." className="h-32" />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit">Post Reply</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                     {review.status === 'Pending Review' && <Button size="sm" className="h-7 text-xs bg-primary text-primary-foreground">Approve</Button>}
                   </div>
                 </div>
