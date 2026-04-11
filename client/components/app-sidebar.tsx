@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import type { Icon } from "@tabler/icons-react"
 import {
   IconCalendarEvent,
+  IconClockHour4,
   IconCreditCard,
   IconDashboard,
   IconHelp,
@@ -181,7 +182,11 @@ const dashboardConfig: Record<DashboardKey, DashboardSidebarConfig> = {
         url: "/dashboard/pharmacy/inventory",
         icon: IconFileText,
       },
-      { title: "Orders", url: "/dashboard/pharmacy/orders", icon: IconUsers },
+      {
+        title: "History",
+        url: "/dashboard/pharmacy/history",
+        icon: IconClockHour4,
+      },
     ],
     navSecondary: [
       {
