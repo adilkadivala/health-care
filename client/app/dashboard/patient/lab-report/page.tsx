@@ -1,9 +1,174 @@
-import React from 'react'
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { IconDownload, IconSearch } from "@tabler/icons-react"
 
-const LabReposts = () => {
+const reports = [
+  {
+    id: "LR-9901",
+    date: "Apr 10, 2026",
+    test: "Complete Blood Count",
+    doctor: "Dr. Sarah Jenkins",
+    status: "Ready",
+    summary: "Within normal range",
+  },
+  {
+    id: "LR-9884",
+    date: "Apr 02, 2026",
+    test: "Thyroid Profile",
+    doctor: "Dr. Robert Fox",
+    status: "Ready",
+    summary: "TSH slightly below range",
+  },
+  {
+    id: "LR-9842",
+    date: "Mar 22, 2026",
+    test: "Liver Function Test",
+    doctor: "Dr. Emily Carter",
+    status: "Processing",
+    summary: "Awaiting final verification",
+  },
+  {
+    id: "LR-9790",
+    date: "Mar 15, 2026",
+    test: "HbA1c",
+    doctor: "Dr. Emily Carter",
+    status: "Reviewed",
+    summary: "6.9% (follow up suggested)",
+  },
+]
+
+export default function LabReport() {
   return (
-    <div>LabReposts</div>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Lab Reports</h2>
+          <p className="text-muted-foreground">
+            Access your diagnostics, progress history, and downloadable documents.
+          </p>
+        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <IconDownload className="mr-2 h-4 w-4" />
+              Export Reports
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Export Lab Reports</DialogTitle>
+              <DialogDescription>
+                Choose a time range and format for your download.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="report-range">Date Range</Label>
+                <Select defaultValue="6-months">
+                  <SelectTrigger id="report-range">
+                    <SelectValue placeholder="Select range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30-days">Last 30 days</SelectItem>
+                    <SelectItem value="6-months">Last 6 months</SelectItem>
+                    <SelectItem value="1-year">Last 1 year</SelectItem>
+                    <SelectItem value="all">All records</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="report-format">Format</Label>
+                <Select defaultValue="pdf">
+                  <SelectTrigger id="report-format">
+                    <SelectValue placeholder="Select format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                    <SelectItem value="csv">CSV</SelectItem>
+                    <SelectItem value="json">JSON</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Download</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Report History</CardTitle>
+            <CardDescription>All reports shared to your patient account.</CardDescription>
+          </div>
+          <div className="relative">
+            <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search by test or report ID..." className="w-[260px] pl-8" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Report ID</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Test</TableHead>
+                <TableHead>Doctor</TableHead>
+                <TableHead>Summary</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reports.map((report) => (
+                <TableRow key={report.id}>
+                  <TableCell className="font-mono text-xs">{report.id}</TableCell>
+                  <TableCell>{report.date}</TableCell>
+                  <TableCell className="font-medium">{report.test}</TableCell>
+                  <TableCell>{report.doctor}</TableCell>
+                  <TableCell className="text-muted-foreground">{report.summary}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={report.status === "Processing" ? "secondary" : "outline"}
+                      className={
+                        report.status === "Ready"
+                          ? "bg-green-500/15 text-green-700 border-green-200 hover:bg-green-500/20 dark:text-green-400 dark:border-green-900"
+                          : report.status === "Reviewed"
+                            ? "bg-blue-500/15 text-blue-700 border-blue-200 hover:bg-blue-500/20 dark:text-blue-400 dark:border-blue-900"
+                            : "bg-orange-500/15 text-orange-700 border-orange-200 hover:bg-orange-500/20 dark:text-orange-400 dark:border-orange-900"
+                      }
+                    >
+                      {report.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
-
-export default LabReposts
