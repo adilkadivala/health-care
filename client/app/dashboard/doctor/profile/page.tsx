@@ -1,9 +1,173 @@
-import React from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { IconStethoscope, IconUser } from "@tabler/icons-react"
 
-const Profile = () => {
+export default function Profile() {
   return (
-    <div>Profile</div>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Doctor Profile</h2>
+          <p className="text-muted-foreground">
+            Maintain personal, clinical, and public profile information.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-7">
+        <Card className="lg:col-span-2">
+          <CardHeader className="items-center text-center">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src="https://i.pravatar.cc/150?u=doctor-profile-01" alt="Doctor profile" />
+              <AvatarFallback>DR</AvatarFallback>
+            </Avatar>
+            <CardTitle className="mt-2">Dr. Sarah Jenkins</CardTitle>
+            <CardDescription>Consultant Cardiologist</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Experience</span>
+              <span className="font-medium">12 years</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">License</span>
+              <span className="font-medium">MED-492018</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Consulting Hours</span>
+              <span className="font-medium">09:00 AM - 05:00 PM</span>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Badge variant="outline">Cardiology</Badge>
+              <Badge variant="outline">Critical Care</Badge>
+              <Badge variant="outline">Teleconsultation</Badge>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full">
+              <IconUser className="mr-2 h-4 w-4" />
+              Update Picture
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <div className="space-y-4 lg:col-span-5">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>Edit basic account and contact details.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="full-name">Full Name</Label>
+                  <Input id="full-name" defaultValue="Dr. Sarah Jenkins" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" defaultValue="sarah.jenkins@hospital.org" />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" defaultValue="+1 800 555 0146" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="language">Preferred Language</Label>
+                  <Select defaultValue="en">
+                    <SelectTrigger id="language">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Spanish</SelectItem>
+                      <SelectItem value="fr">French</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="bio">Short Bio</Label>
+                <Textarea
+                  id="bio"
+                  className="h-24"
+                  defaultValue="Focused on preventive cardiology, evidence-based treatment plans, and long term patient follow up."
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button>Save Personal Details</Button>
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Clinical Preferences</CardTitle>
+              <CardDescription>
+                Keep scheduling and documentation defaults consistent.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="specialty">Primary Specialty</Label>
+                  <Select defaultValue="cardiology">
+                    <SelectTrigger id="specialty">
+                      <SelectValue placeholder="Select specialty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cardiology">Cardiology</SelectItem>
+                      <SelectItem value="internal-medicine">Internal Medicine</SelectItem>
+                      <SelectItem value="neurology">Neurology</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="duration">Default Slot Duration</Label>
+                  <Select defaultValue="30">
+                    <SelectTrigger id="duration">
+                      <SelectValue placeholder="Select duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 minutes</SelectItem>
+                      <SelectItem value="20">20 minutes</SelectItem>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="45">45 minutes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="timezone">Timezone</Label>
+                  <Select defaultValue="est">
+                    <SelectTrigger id="timezone">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pst">Pacific Time</SelectItem>
+                      <SelectItem value="est">Eastern Time</SelectItem>
+                      <SelectItem value="utc">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border p-3 text-sm text-muted-foreground">
+                <IconStethoscope className="h-4 w-4" />
+                Profile data is visible to staff and patients where access is allowed.
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline">Save Clinical Preferences</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    </div>
   )
 }
-
-export default Profile
