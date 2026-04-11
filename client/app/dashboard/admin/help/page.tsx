@@ -1,8 +1,21 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { IconBook, IconLifebuoy, IconMessageCircle, IconPhoneCall, IconSearch } from "@tabler/icons-react"
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function Help() {
   return (
@@ -35,37 +48,90 @@ export default function Help() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-          <CardHeader className="flex flex-row items-center space-x-4">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <IconLifebuoy className="w-6 h-6" />
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+              <CardHeader className="flex flex-row items-center space-x-4">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <IconLifebuoy className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Support Tickets</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Can&apos;t find what you need? Open a support ticket and our team will get back to you shortly.
+                </p>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Open Support Ticket</DialogTitle>
+              <DialogDescription>
+                Describe your issue below and our support team will get in touch with you.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="subject">Subject</Label>
+                <Input id="subject" placeholder="What is your issue about?" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea id="description" placeholder="Please provide details..." className="h-32" />
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-lg">Support Tickets</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Can't find what you need? Open a support ticket and our team will get back to you shortly.
-            </p>
-          </CardContent>
-        </Card>
+            <DialogFooter>
+              <Button type="submit">Submit Ticket</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-          <CardHeader className="flex flex-row items-center space-x-4">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <IconPhoneCall className="w-6 h-6" />
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+              <CardHeader className="flex flex-row items-center space-x-4">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <IconPhoneCall className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Contact Us</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Need immediate assistance? Call our dedicated support line for priority help.
+                </p>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Contact Us</DialogTitle>
+              <DialogDescription>
+                Reach out to us directly via phone or email for immediate assistance.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="flex items-center space-x-4 p-4 rounded-lg bg-primary/5">
+                <IconPhoneCall className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">+1 (800) 123-4567</p>
+                  <p className="text-sm text-muted-foreground">Available 24/7 for emergencies</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4 p-4 rounded-lg bg-primary/5">
+                <IconMessageCircle className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">support@hospital.org</p>
+                  <p className="text-sm text-muted-foreground">We usually reply within 24 hours</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-lg">Contact Us</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Need immediate assistance? Call our dedicated support line for priority help.
-            </p>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="mt-8">

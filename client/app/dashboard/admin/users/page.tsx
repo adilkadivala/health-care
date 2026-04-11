@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react'
 import {
   Table,
@@ -63,6 +64,18 @@ const users = [
   },
 ]
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 export default function Users() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -74,9 +87,65 @@ export default function Users() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button>
-            <IconPlus className="mr-2 h-4 w-4" /> Add User
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <IconPlus className="mr-2 h-4 w-4" /> Add User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New User</DialogTitle>
+                <DialogDescription>
+                  Create a new staff or user account here. Click save when you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" placeholder="Dr. Sarah Jenkins" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input id="email" type="email" placeholder="sarah@hospital.org" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select>
+                      <SelectTrigger id="role">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="doctor">Doctor</SelectItem>
+                        <SelectItem value="nurse">Nurse</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="pharmacist">Pharmacist</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Select>
+                      <SelectTrigger id="department">
+                        <SelectValue placeholder="Select dept" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cardiology">Cardiology</SelectItem>
+                        <SelectItem value="pediatrics">Pediatrics</SelectItem>
+                        <SelectItem value="neurology">Neurology</SelectItem>
+                        <SelectItem value="it">IT</SelectItem>
+                        <SelectItem value="pharmacy">Pharmacy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

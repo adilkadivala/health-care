@@ -12,18 +12,11 @@ import {
   IconInnerShadowTop,
   IconActivity,
   IconFileText,
-  IconMedicineSyrup,
-  IconNotes,
-  IconReport,
-  IconEye,
-  IconSearch,
   IconSettings,
-  IconStethoscope,
   IconUser,
   IconUsers,
 } from "@tabler/icons-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"

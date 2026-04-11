@@ -40,12 +40,10 @@ export type DashboardSidebarConfig = {
   documents: DocumentLink[]
 }
 
-export const dashboardSidebarConfig: Record<
+export const dashboardSidebarConfig = {} as Record<
   DashboardKey,
   DashboardSidebarConfig
-> = {
-  
-}
+>
 
 export function getDashboardKeyFromPathname(pathname: string): DashboardKey {
   const segment = pathname.split("/").filter(Boolean)[0]

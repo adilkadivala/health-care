@@ -61,6 +61,18 @@ const auditLogs = [
   },
 ]
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 export default function Audit() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -72,9 +84,53 @@ export default function Audit() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
-            <IconDownload className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <IconDownload className="mr-2 h-4 w-4" /> Export CSV
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Export Audit Logs</DialogTitle>
+                <DialogDescription>
+                  Configure your export options before downloading.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="dateRange">Date Range</Label>
+                  <Select defaultValue="last7days">
+                    <SelectTrigger id="dateRange">
+                      <SelectValue placeholder="Select date range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="last7days">Last 7 Days</SelectItem>
+                      <SelectItem value="last30days">Last 30 Days</SelectItem>
+                      <SelectItem value="all">All Time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="format">Format</Label>
+                  <Select defaultValue="csv">
+                    <SelectTrigger id="format">
+                      <SelectValue placeholder="Select format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="csv">CSV (Spreadsheet)</SelectItem>
+                      <SelectItem value="json">JSON (Data)</SelectItem>
+                      <SelectItem value="pdf">PDF (Printable report)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Download</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
