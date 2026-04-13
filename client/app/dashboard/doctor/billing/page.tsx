@@ -1,126 +1,84 @@
-import { AreaChart } from "@/components/chart-area-interactive";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Dialog } from "@/components/ui/dialog";
-import { Heading } from "@/components/ui/heading";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MoonBlock } from "lucide-react";
-import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { IconReceipt2 } from "@tabler/icons-react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
-export default function BillingDashboard() {
-  const [selectedPayment, setSelectedPayment] = useState("weekly");
-  const [showDetails, setShowDetails] = useState(false);
-
+export default function DoctorBillingPage() {
   return (
-    <Card className="min-h-[600px]">
-      <Heading as="h2" size="lg" mb={4}>
-        Billing Dashboard
-      </Heading>
-
-      {/* Action Bar */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <Badge count={1} variant="subtle" className="relative">
-          <Badge.Popover offset={-5} side="top" className="rounded-full">
-            <Badge.Data>7</Badge.Data>
-            <Button variant="ghost" className="p-2" asChild>
-              <MoonBlock size={16} />
-            </Button>
-          </Badge.Popover>
-        </Badge>
-        <Button variant="outline" className="flex-1 px-4 py-2 rounded-lg">
-          Generate Report
-        </Button>
-        <Button variant="solid" className="px-4 py-2 rounded-lg" onClick={() => setShowDetails(true)}>
-          Settings
-        </Button>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-        <Card className="h-full">
-          <div className="p-4">
-            <div className="flex justify-end mb-2">
-              <Input type="month" defaultValue="2026-03" className="form-input" />
-            </div>
-            <AreaChart
-              data={[
-                { month: "Jan", value: 120 },
-                { month: "Feb", value: 150 },
-                { month: "Mar", value: 180 },
-              ]}
-              xAxisLabel="Month"
-              yAxisLabel="Amount ($)"
-              color="#4f46e5"
-              rounded={true}
-            />
+    <div className="flex flex-col gap-6 px-4 lg:px-6 py-6 pt-0">
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
+            <IconReceipt2 className="size-6 text-indigo-600 dark:text-indigo-400" />
           </div>
-        </Card>
-        <Card className="h-full">
-          <div className="p-4">
-            <div className="flex justify-end mb-2">
-              <Input type="month" defaultValue="2026-03" className="form-input" />
-            </div>
-            <div className="relative h-48">
-              <Badge className="absolute flex items-center justify-center h-full w-full">
-                <Badge.Data>85</Badge.Data>
-                <Badge.Content asChild>
-                  <Button size="sm" variant="ghost" onClick={() => setShowDetails(true)}>
-                    Billing Details
-                  </Button>
-                </Badge.Content>
-              </Badge>
-              <AreaChart
-                data={[
-                  { month: "Jan", value: 80 },
-                  { month: "Feb", value: 120 },
-                  { month: "Mar", value: 140 },
-                ]}
-                xAxisLabel="Month"
-                yAxisLabel="Revenue ($)"
-                color="#10b981"
-                rounded={true}
-              />
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Consultation Billing</h1>
+            <p className="text-muted-foreground text-sm">Review charges and submit new billing codes.</p>
           </div>
-        </Card>
-      </div>
-
-      {/* Action Modal */}
-      {showDetails && (
-        <Dialog open={true} onOpenChange={setShowDetails}>
-          <Dialog.Panel className="p-6 rounded-lg bg-card max-w-md w-full">
-            <Dialog.Title asChild>
-              <Heading as="h3">Payment Settings</Heading>
-            </Dialog.Title>
-            <Dialog.Description className="py-2">
-              <Label>
-                Billing Cycle
-                <Input type="hidden" name="billing_cycle" value="weekly" />
-              </Label>
-            </Dialog.Description>
-            <form className="space-y-2">
-              <Input type="text" placeholder="Weekly" defaultValue="weekly" />
-              <Input type="text" placeholder="Monthly" defaultValue="monthly" />
-            </form>
-          </Dialog.Panel>
+        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>Add New Charge</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Consultation Charge</DialogTitle>
+              <DialogDescription>Input ICD-10 and CPT codes for the visit.</DialogDescription>
+            </DialogHeader>
+            <div className="py-6 flex justify-center text-muted-foreground">
+              Billing Form Placeholder
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline">Cancel</Button>
+              <Button>Submit</Button>
+            </div>
+          </DialogContent>
         </Dialog>
-      )}
-
-      {/* Interactive Cards */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {["Patients", "Claims", "Payments"].map((label) => (
-          <Card key={label} className="cursor-pointer hover:shadow-lg transition-shadow">
-            <div className="flex flex-col items-center justify-center h-full">
-              <Heading size="lg" className="text-gray-600">{label}</Heading>
-              <Button onClick={() => alert(`View ${label} details`)}>
-                View Details
-              </Button>
-            </div>
-          </Card>
-        ))}
       </div>
-    </Card>
-  );
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Recent Charges</CardTitle>
+            <CardDescription>History of your submitted procedure bills.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { pt: "Alice Smith", date: "Today", amount: "$150.00", status: "Pending" },
+                { pt: "Bob Jones", date: "Yesterday", amount: "$250.00", status: "Approved" },
+                { pt: "Charlie Brown", date: "Aug 12", amount: "$90.00", status: "Approved" },
+              ].map((bill, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div>
+                    <div className="font-semibold">{bill.pt}</div>
+                    <div className="text-xs text-muted-foreground">{bill.date}</div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono">{bill.amount}</span>
+                    <Badge variant={bill.status === "Approved" ? "default" : "secondary"}>{bill.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+             <div className="flex justify-between items-center p-3 bg-secondary rounded text-sm font-medium">
+               <span>This Week</span> <span>$2,450.00</span>
+             </div>
+             <div className="flex justify-between items-center p-3 bg-secondary rounded text-sm font-medium">
+               <span>Pending Claims</span> <span>5</span>
+             </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
 }
