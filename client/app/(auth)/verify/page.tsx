@@ -1,14 +1,12 @@
 import {
   FieldGroup,
   Field,
-  FieldSeparator,
   FieldLabel,
   FieldDescription,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator} from "@/components/ui/input-otp"
 import Link from "next/link"
-import { Spinner } from "@/components/ui/spinner"
 
 export default function Verify() {
   return (
@@ -18,7 +16,7 @@ export default function Verify() {
           <h1 className="text-xl font-bold">Enter verification code</h1>
           <FieldDescription>
             We sent a 6-digit code to your{" "}
-            <span className="text-primary">{email}</span> address
+            <span className="text-primary">`email`</span> address
           </FieldDescription>
         </div>
         <Field className="mx-auto">
@@ -27,8 +25,6 @@ export default function Verify() {
           </FieldLabel>
           <InputOTP
             maxLength={6}
-            pattern={REGEXP_ONLY_DIGITS}
-            name="otp"
             required
             containerClassName="gap-4"
             className="inset-0"
@@ -54,15 +50,14 @@ export default function Verify() {
               asChild
               variant="ghost"
               className="dark:hover:bg-none"
-              onClick={() => handleReset()}
             >
-              <Link to="#">{loading ? "sending..." : "resend"}</Link>
+              <Link href="#">resend</Link>
             </Button>
           </FieldDescription>
         </Field>
         <Field>
-          <Button type="submit" onClick={handleOtp}>
-            {loading ? "loading... " : "Verify"}
+          <Button type="submit">
+            Verify
           </Button>
         </Field>
       </FieldGroup>
