@@ -18,6 +18,7 @@ node_modules/
 package-lock.json
 /out/
 init.sql/
+generated/
 
 # production
 /build
