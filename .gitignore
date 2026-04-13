@@ -17,6 +17,7 @@ node_modules/
 .agent
 package-lock.json
 /out/
+init.sql/
 
 # production
 /build
