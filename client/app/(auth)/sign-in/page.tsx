@@ -1,3 +1,7 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   FieldGroup,
   Field,
@@ -8,11 +12,42 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Spinner } from "@/components/ui/spinner"
+import { api } from "@/lib/http"
+// import { Spinner } from "@/components/ui/spinner" // assuming spinner wasn't actively implemented in this exact layout if not requested.
 
-export default function SingIn() {
+export default function SignIn() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await api.post<{ token: string, user: { role: string } }>('/auth/login', {
+        email,
+        password
+      });
+      
+      // Store credentials locally
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Route intelligently based on role
+      router.push(`/dashboard/${data.user.role.toLowerCase()}/overview`); 
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Login to your account</h1>
@@ -20,10 +55,19 @@ export default function SingIn() {
             Enter your email below to login to your account
           </p>
         </div>
+        
+        {error && <div className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded-md">{error}</div>}
+
         <Field className="relative">
           <FieldLabel htmlFor="email">Email</FieldLabel>
-
-          <Input id="email" type="email" placeholder="john@gmail.com" />
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="john@gmail.com" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </Field>
         <Field className="relative">
           <div className="flex items-center">
@@ -35,11 +79,18 @@ export default function SingIn() {
               Forgot your password?
             </Link>
           </div>
-          <Input id="password" placeholder="john@1234" type="password" />
+          <Input 
+            id="password" 
+            placeholder="john@1234" 
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </Field>
         <Field>
-          <Button className="text-md" type="submit">
-            Login
+          <Button className="text-md" type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
@@ -63,8 +114,8 @@ export default function SingIn() {
             </Button>
           </div>
           <FieldDescription className="text-center">
-            Don't have an account?
-            <Link href={"/sign-up"} className="underline underline-offset-4">
+            Don't have an account?{" "}
+            <Link href={"/sign-up"} className="underline underline-offset-4 text-primary font-semibold">
               Sign up
             </Link>
           </FieldDescription>
