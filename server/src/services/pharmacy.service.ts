@@ -52,9 +52,22 @@ export async function getOverview(userId: string) {
   };
 }
 
-export async function listOrders(userId: string) {
-  await requirePharmacist(userId);
+export async function listOrders(userId: string, q?: string) {
+  const pharmacist = await requirePharmacist(userId);
+  const prefs = asObject(pharmacist.preferences);
+  const purchaseOrders = Array.isArray(prefs.purchaseOrders) ? prefs.purchaseOrders as Array<Record<string, unknown>> : [];
+  const term = q?.trim().toLowerCase();
   const rows = await prisma.prescription.findMany({
+    where: term
+      ? {
+          OR: [
+            { patient: { user: { firstName: { contains: term, mode: 'insensitive' } } } },
+            { patient: { user: { lastName: { contains: term, mode: 'insensitive' } } } },
+            { doctor: { user: { firstName: { contains: term, mode: 'insensitive' } } } },
+            { doctor: { user: { lastName: { contains: term, mode: 'insensitive' } } } },
+          ],
+        }
+      : undefined,
     orderBy: { createdAt: 'desc' },
     take: 120,
     include: {
@@ -63,7 +76,7 @@ export async function listOrders(userId: string) {
       items: { include: { medication: true } },
     },
   });
-  return rows.map((r) => ({
+  const prescriptionOrders = rows.map((r) => ({
     id: r.id,
     patientName: `${r.patient.user.firstName} ${r.patient.user.lastName}`,
     doctorName: `Dr. ${r.doctor.user.firstName} ${r.doctor.user.lastName}`,
@@ -72,6 +85,19 @@ export async function listOrders(userId: string) {
     notes: r.notes,
     items: r.items.map((i) => ({ id: i.id, medication: i.medication.name, quantity: i.quantity, dosage: i.dosage, frequency: i.frequency })),
   }));
+  const customOrders = purchaseOrders
+    .map((o) => ({
+      id: String(o.id ?? ''),
+      patientName: 'Stock Replenishment',
+      doctorName: String(o.supplier ?? 'Supplier'),
+      status: String(o.status ?? 'PROCESSING'),
+      createdAt: String(o.createdAt ?? new Date().toISOString()),
+      notes: null as string | null,
+      items: [{ id: `${String(o.id ?? '')}-item`, medication: String(o.itemName ?? 'Medicine'), quantity: Number(o.itemCount ?? 0), dosage: null, frequency: null }],
+    }))
+    .filter((o) => o.id);
+  const merged = [...customOrders, ...prescriptionOrders];
+  return term ? merged.filter((order) => `${order.id} ${order.doctorName}`.toLowerCase().includes(term)) : merged;
 }
 
 export async function listPatients(userId: string) {
@@ -119,9 +145,21 @@ export async function patchOrderStatus(userId: string, id: string, status: Presc
   return { id: updated.id, status: updated.status };
 }
 
-export async function listInventory(userId: string) {
+export async function listInventory(userId: string, q?: string) {
   await requirePharmacist(userId);
-  const meds = await prisma.medication.findMany({ orderBy: { updatedAt: 'desc' }, take: 300 });
+  const term = q?.trim();
+  const meds = await prisma.medication.findMany({
+    where: term
+      ? {
+          OR: [
+            { name: { contains: term, mode: 'insensitive' } },
+            { brandName: { contains: term, mode: 'insensitive' } },
+          ],
+        }
+      : undefined,
+    orderBy: { updatedAt: 'desc' },
+    take: 300,
+  });
   return meds.map((m) => ({
     id: m.id,
     name: m.name,
@@ -131,6 +169,35 @@ export async function listInventory(userId: string) {
     requiresPrescription: m.requiresPrescription,
     updatedAt: m.updatedAt.toISOString(),
   }));
+}
+
+export async function createOrder(
+  userId: string,
+  body: { supplier: string; itemName: string; itemCount: number; estimatedAmount?: number; eta?: string }
+) {
+  const pharmacist = await requirePharmacist(userId);
+  const prefs = asObject(pharmacist.preferences);
+  const existing = Array.isArray(prefs.purchaseOrders) ? prefs.purchaseOrders as Array<Record<string, unknown>> : [];
+  const nextOrder = {
+    id: `PO-${Date.now()}`,
+    supplier: body.supplier,
+    itemName: body.itemName,
+    itemCount: body.itemCount,
+    estimatedAmount: body.estimatedAmount ?? 0,
+    eta: body.eta ?? null,
+    status: 'PROCESSING',
+    createdAt: new Date().toISOString(),
+  };
+  await prisma.pharmacist.update({
+    where: { id: pharmacist.id },
+    data: {
+      preferences: {
+        ...prefs,
+        purchaseOrders: [nextOrder, ...existing].slice(0, 100),
+      } as Prisma.InputJsonValue,
+    },
+  });
+  return nextOrder;
 }
 
 export async function patchInventoryItem(userId: string, id: string, body: { stockQuantity?: number; unitPrice?: number }) {

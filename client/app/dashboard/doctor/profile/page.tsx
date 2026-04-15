@@ -1,3 +1,5 @@
+"use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -7,8 +9,72 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { IconStethoscope, IconUser } from "@tabler/icons-react"
+import { useEffect, useState } from "react"
+import { api } from "@/lib/http"
 
 export default function Profile() {
+  const [fullName, setFullName] = useState("Dr. Sarah Jenkins")
+  const [email, setEmail] = useState("sarah.jenkins@hospital.org")
+  const [phone, setPhone] = useState("+1 800 555 0146")
+  const [bio, setBio] = useState(
+    "Focused on preventive cardiology, evidence-based treatment plans, and long term patient follow up.",
+  )
+  const [specialization, setSpecialization] = useState("cardiology")
+  const [slotDuration, setSlotDuration] = useState("30")
+  const [timezone, setTimezone] = useState("est")
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<{
+          user: { firstName: string; lastName: string; email: string; phone?: string | null }
+          doctor: { specialization?: string | null; preferences?: unknown }
+        }>("/doctor/me")
+        setFullName(`Dr. ${data.user.firstName} ${data.user.lastName}`.trim())
+        setEmail(data.user.email)
+        setPhone(data.user.phone ?? "")
+        if (data.doctor.specialization) {
+          const normalized = data.doctor.specialization.toLowerCase().replaceAll(" ", "-")
+          if (["cardiology", "internal-medicine", "neurology"].includes(normalized)) {
+            setSpecialization(normalized)
+          }
+        }
+      } catch {
+        // Keep default UI values if request fails.
+      }
+    }
+    void load()
+  }, [])
+
+  const handleSavePersonalDetails = async () => {
+    const [firstName, ...rest] = fullName.trim().replace(/^Dr\.\s*/i, "").split(" ")
+    const lastName = rest.join(" ") || "-"
+    try {
+      const data = await api.patch<{
+        user: { firstName: string; lastName: string; email: string; phone?: string | null }
+      }>("/doctor/me", { firstName, lastName, phone })
+      setFullName(`Dr. ${data.user.firstName} ${data.user.lastName}`.trim())
+      setPhone(data.user.phone ?? "")
+    } catch (error) {
+      console.error("Failed to update doctor personal details", error)
+    }
+  }
+
+  const handleSaveClinicalPreferences = async () => {
+    try {
+      await api.patch("/doctor/me", {
+        specialization,
+        preferences: {
+          bio,
+          slotDuration,
+          timezone,
+        },
+      })
+    } catch (error) {
+      console.error("Failed to update doctor clinical preferences", error)
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -67,17 +133,17 @@ export default function Profile() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="full-name">Full Name</Label>
-                  <Input id="full-name" defaultValue="Dr. Sarah Jenkins" />
+                  <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="sarah.jenkins@hospital.org" />
+                  <Input id="email" type="email" value={email} readOnly />
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" defaultValue="+1 800 555 0146" />
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="language">Preferred Language</Label>
@@ -98,12 +164,13 @@ export default function Profile() {
                 <Textarea
                   id="bio"
                   className="h-24"
-                  defaultValue="Focused on preventive cardiology, evidence-based treatment plans, and long term patient follow up."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Personal Details</Button>
+              <Button onClick={handleSavePersonalDetails}>Save Personal Details</Button>
             </CardFooter>
           </Card>
 
@@ -118,7 +185,7 @@ export default function Profile() {
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="grid gap-2">
                   <Label htmlFor="specialty">Primary Specialty</Label>
-                  <Select defaultValue="cardiology">
+                  <Select value={specialization} onValueChange={setSpecialization}>
                     <SelectTrigger id="specialty">
                       <SelectValue placeholder="Select specialty" />
                     </SelectTrigger>
@@ -131,7 +198,7 @@ export default function Profile() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="duration">Default Slot Duration</Label>
-                  <Select defaultValue="30">
+                  <Select value={slotDuration} onValueChange={setSlotDuration}>
                     <SelectTrigger id="duration">
                       <SelectValue placeholder="Select duration" />
                     </SelectTrigger>
@@ -145,7 +212,7 @@ export default function Profile() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Select defaultValue="est">
+                  <Select value={timezone} onValueChange={setTimezone}>
                     <SelectTrigger id="timezone">
                       <SelectValue placeholder="Select timezone" />
                     </SelectTrigger>
@@ -163,7 +230,7 @@ export default function Profile() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline">Save Clinical Preferences</Button>
+              <Button variant="outline" onClick={handleSaveClinicalPreferences}>Save Clinical Preferences</Button>
             </CardFooter>
           </Card>
         </div>

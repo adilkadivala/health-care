@@ -87,9 +87,20 @@ export async function getOverview(userId: string) {
   };
 }
 
-export async function listAppointments(userId: string) {
+export async function listAppointments(userId: string, q?: string) {
   await requireReceptionist(userId);
+  const term = q?.trim();
   const rows = await prisma.appointment.findMany({
+    where: term
+      ? {
+          OR: [
+            { patient: { user: { firstName: { contains: term, mode: 'insensitive' } } } },
+            { patient: { user: { lastName: { contains: term, mode: 'insensitive' } } } },
+            { doctor: { user: { firstName: { contains: term, mode: 'insensitive' } } } },
+            { doctor: { user: { lastName: { contains: term, mode: 'insensitive' } } } },
+          ],
+        }
+      : undefined,
     orderBy: { startTime: 'asc' },
     take: 150,
     include: {
@@ -168,9 +179,22 @@ export async function patchAppointment(userId: string, id: string, body: { statu
   return { id: updated.id, status: updated.status };
 }
 
-export async function listWalkIns(userId: string) {
+export async function listWalkIns(userId: string, q?: string) {
   await requireReceptionist(userId);
-  const rows = await prisma.walkInQueue.findMany({ orderBy: { checkInTime: 'asc' }, take: 200 });
+  const term = q?.trim();
+  const rows = await prisma.walkInQueue.findMany({
+    where: term
+      ? {
+          OR: [
+            { patientName: { contains: term, mode: 'insensitive' } },
+            { reason: { contains: term, mode: 'insensitive' } },
+            { phoneNumber: { contains: term, mode: 'insensitive' } },
+          ],
+        }
+      : undefined,
+    orderBy: { checkInTime: 'asc' },
+    take: 200,
+  });
   return rows.map((w) => ({
     id: w.id,
     patientName: w.patientName,
@@ -204,7 +228,7 @@ export async function createWalkIn(
 export async function patchWalkIn(
   userId: string,
   id: string,
-  body: { status?: string; assignedTo?: string | null; priority?: number; checkOut?: boolean }
+  body: { status?: string; assignedTo?: string | null; priority?: number; patientName?: string; reason?: string; checkOut?: boolean }
 ) {
   await requireReceptionist(userId);
   const exists = await prisma.walkInQueue.findUnique({ where: { id } });
@@ -215,16 +239,39 @@ export async function patchWalkIn(
       ...(body.status !== undefined ? { status: body.status } : {}),
       ...(body.assignedTo !== undefined ? { assignedTo: body.assignedTo } : {}),
       ...(body.priority !== undefined ? { priority: body.priority } : {}),
+      ...(body.patientName !== undefined ? { patientName: body.patientName } : {}),
+      ...(body.reason !== undefined ? { reason: body.reason } : {}),
       ...(body.checkOut ? { checkOutTime: new Date() } : {}),
     },
   });
   return { id: updated.id, status: updated.status, checkOutTime: updated.checkOutTime?.toISOString() ?? null };
 }
 
-export async function getBilling(userId: string) {
+export async function deleteWalkIn(userId: string, id: string) {
+  await requireReceptionist(userId);
+  const exists = await prisma.walkInQueue.findUnique({ where: { id } });
+  if (!exists) throw new Error('Walk-in not found');
+  await prisma.walkInQueue.delete({ where: { id } });
+  return { id, deleted: true };
+}
+
+export async function getBilling(userId: string, query?: { q?: string; status?: TransactionStatus }) {
   const rec = await requireReceptionist(userId);
+  const term = query?.q?.trim();
   const txns = await prisma.transaction.findMany({
-    where: { receptionistId: rec.id },
+    where: {
+      receptionistId: rec.id,
+      ...(query?.status ? { status: query.status } : {}),
+      ...(term
+        ? {
+            OR: [
+              { patient: { user: { firstName: { contains: term, mode: 'insensitive' } } } },
+              { patient: { user: { lastName: { contains: term, mode: 'insensitive' } } } },
+              { description: { contains: term, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { createdAt: 'desc' },
     take: 120,
     include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },

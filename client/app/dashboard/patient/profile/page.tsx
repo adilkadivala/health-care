@@ -1,3 +1,5 @@
+"use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -6,8 +8,66 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useEffect, useState } from "react"
+import { api } from "@/lib/http"
 
 export default function Profile() {
+  const [fullName, setFullName] = useState("Aarav Sharma")
+  const [dateOfBirth, setDateOfBirth] = useState("1992-08-14")
+  const [email, setEmail] = useState("aarav.sharma@email.com")
+  const [phone, setPhone] = useState("+1 800 222 0192")
+  const [address, setAddress] = useState("1540 Greenwood Ave, Austin, TX 78701")
+  const [allergies, setAllergies] = useState("Penicillin")
+  const [conditions, setConditions] = useState("Hypertension")
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<{
+          user: { firstName: string; lastName: string; email: string; phone?: string | null }
+          patient: { dateOfBirth: string; address?: string | null; allergies?: string[]; medicalHistory?: string | null }
+        }>("/patient/me")
+        setFullName(`${data.user.firstName} ${data.user.lastName}`.trim())
+        setEmail(data.user.email)
+        setPhone(data.user.phone ?? "")
+        setDateOfBirth(data.patient.dateOfBirth.slice(0, 10))
+        setAddress(data.patient.address ?? "")
+        setAllergies((data.patient.allergies ?? []).join(", "))
+        setConditions(data.patient.medicalHistory ?? "")
+      } catch {
+        // Keep defaults.
+      }
+    }
+    void load()
+  }, [])
+
+  const handleSavePersonal = async () => {
+    const [firstName, ...rest] = fullName.trim().split(" ")
+    const lastName = rest.join(" ")
+    if (!firstName || !lastName) return
+    try {
+      const data = await api.patch<{
+        user: { firstName: string; lastName: string; email: string; phone?: string | null }
+      }>("/patient/me", { firstName, lastName, phone, dateOfBirth, address })
+      setFullName(`${data.user.firstName} ${data.user.lastName}`.trim())
+      setEmail(data.user.email)
+      setPhone(data.user.phone ?? "")
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
+  const handleSaveMedical = async () => {
+    try {
+      await api.patch("/patient/me", {
+        allergies: allergies.split(",").map((item) => item.trim()).filter(Boolean),
+        medicalHistory: conditions,
+      })
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -64,21 +124,21 @@ export default function Profile() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="full-name">Full Name</Label>
-                  <Input id="full-name" defaultValue="Aarav Sharma" />
+                  <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="dob">Date of Birth</Label>
-                  <Input id="dob" type="date" defaultValue="1992-08-14" />
+                  <Input id="dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="aarav.sharma@email.com" />
+                  <Input id="email" type="email" value={email} readOnly />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" defaultValue="+1 800 222 0192" />
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
               </div>
               <div className="grid gap-2">
@@ -86,12 +146,13 @@ export default function Profile() {
                 <Textarea
                   id="address"
                   className="h-20"
-                  defaultValue="1540 Greenwood Ave, Austin, TX 78701"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Personal Details</Button>
+              <Button onClick={handleSavePersonal}>Save Personal Details</Button>
             </CardFooter>
           </Card>
 
@@ -106,11 +167,11 @@ export default function Profile() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="allergies">Known Allergies</Label>
-                  <Input id="allergies" defaultValue="Penicillin" />
+                  <Input id="allergies" value={allergies} onChange={(e) => setAllergies(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="conditions">Chronic Conditions</Label>
-                  <Input id="conditions" defaultValue="Hypertension" />
+                  <Input id="conditions" value={conditions} onChange={(e) => setConditions(e.target.value)} />
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
@@ -139,7 +200,7 @@ export default function Profile() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline">Save Medical Info</Button>
+              <Button variant="outline" onClick={handleSaveMedical}>Save Medical Info</Button>
             </CardFooter>
           </Card>
         </div>

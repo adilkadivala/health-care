@@ -72,6 +72,52 @@ export async function getOverview(userId: string) {
   };
 }
 
+export async function getOverviewTrends(userId: string, rangeDays: number) {
+  await requireAdmin(userId);
+  const days = Number.isFinite(rangeDays) ? Math.max(7, Math.min(180, Math.trunc(rangeDays))) : 90;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (days - 1));
+
+  const [appointments, patients] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { createdAt: { gte: start } },
+      select: { createdAt: true },
+    }),
+    prisma.patient.findMany({
+      where: { user: { createdAt: { gte: start } } },
+      select: { user: { select: { createdAt: true } } },
+    }),
+  ]);
+
+  const toKey = (date: Date) => date.toISOString().slice(0, 10);
+  const appointmentByDate = new Map<string, number>();
+  const patientByDate = new Map<string, number>();
+
+  for (const row of appointments) {
+    const key = toKey(row.createdAt);
+    appointmentByDate.set(key, (appointmentByDate.get(key) ?? 0) + 1);
+  }
+  for (const row of patients) {
+    const key = toKey(row.user.createdAt);
+    patientByDate.set(key, (patientByDate.get(key) ?? 0) + 1);
+  }
+
+  const points: Array<{ date: string; desktop: number; mobile: number }> = [];
+  for (let i = 0; i < days; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = toKey(d);
+    points.push({
+      date: key,
+      desktop: appointmentByDate.get(key) ?? 0,
+      mobile: patientByDate.get(key) ?? 0,
+    });
+  }
+
+  return { points };
+}
+
 export async function listUsers(userId: string) {
   await requireAdmin(userId);
   const rows = await prisma.user.findMany({

@@ -47,6 +47,17 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
     fail(e, res);
   }
 };
+export const getOverviewTrends = async (req: AuthRequest, res: Response) => {
+  const id = userId(req, res);
+  if (!id) return;
+  const rangeRaw = typeof req.query.range === "string" ? req.query.range : "90d";
+  const range = Number.parseInt(rangeRaw.replace("d", ""), 10);
+  try {
+    res.status(200).json(await adminService.getOverviewTrends(id, range));
+  } catch (e) {
+    fail(e, res);
+  }
+};
 export const getUsers = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res);
   if (!id) return;
@@ -98,6 +109,25 @@ export const getAudit = async (req: AuthRequest, res: Response) => {
   if (!id) return;
   try {
     res.status(200).json(await adminService.getAudit(id));
+  } catch (e) {
+    fail(e, res);
+  }
+};
+export const exportAuditCsv = async (req: AuthRequest, res: Response) => {
+  const id = userId(req, res);
+  if (!id) return;
+  try {
+    const data = await adminService.getAudit(id);
+    const rows = data.logs.map((log) => [log.id, log.category, log.message, log.at]);
+    const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
+    const csv = [
+      ["id", "category", "message", "timestamp"].map(escape).join(","),
+      ...rows.map((row) => row.map((v) => escape(String(v))).join(",")),
+    ].join("\n");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=audit-logs.csv");
+    res.status(200).send(csv);
   } catch (e) {
     fail(e, res);
   }

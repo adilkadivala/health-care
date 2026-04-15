@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { IconCheck, IconClock, IconFileText } from "@tabler/icons-react"
+import { useEffect, useState } from "react"
+import { api } from "@/lib/http"
 
 const checklist = [
   { id: 1, item: "Basic profile information", status: "Completed" },
@@ -16,6 +20,28 @@ const checklist = [
 ]
 
 export default function Registration() {
+  const [insuranceProvider, setInsuranceProvider] = useState("aetna")
+  const [policyNumber, setPolicyNumber] = useState("ATN-4492-88291")
+  const [primaryConcern, setPrimaryConcern] = useState("")
+  const [medicalHistory, setMedicalHistory] = useState("")
+
+  useEffect(() => {
+    void api.get("/patient/registration").catch(() => undefined)
+  }, [])
+
+  const handleSubmitRegistration = async () => {
+    try {
+      await api.post("/patient/registration", {
+        insuranceProvider,
+        policyNumber,
+        primaryConcern,
+        medicalHistory,
+      })
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -63,7 +89,7 @@ export default function Registration() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="insurance-provider">Insurance Provider</Label>
-                <Select defaultValue="aetna">
+                <Select defaultValue="aetna" value={insuranceProvider} onValueChange={setInsuranceProvider}>
                   <SelectTrigger id="insurance-provider">
                     <SelectValue placeholder="Select provider" />
                   </SelectTrigger>
@@ -77,13 +103,13 @@ export default function Registration() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="policy-number">Policy Number</Label>
-                <Input id="policy-number" defaultValue="ATN-4492-88291" />
+                <Input id="policy-number" defaultValue="ATN-4492-88291" value={policyNumber} onChange={(e) => setPolicyNumber(e.target.value)} />
               </div>
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="primary-concern">Primary Health Concern</Label>
-              <Input id="primary-concern" placeholder="Reason for visit or care program" />
+              <Input id="primary-concern" placeholder="Reason for visit or care program" value={primaryConcern} onChange={(e) => setPrimaryConcern(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
@@ -92,6 +118,8 @@ export default function Registration() {
                 id="medical-history"
                 className="h-28"
                 placeholder="Share chronic conditions, surgeries, and relevant notes..."
+                value={medicalHistory}
+                onChange={(e) => setMedicalHistory(e.target.value)}
               />
             </div>
 
@@ -102,7 +130,7 @@ export default function Registration() {
                 <IconClock className="h-4 w-4" />
                 Average approval time for submitted details: within 24 hours.
               </div>
-              <Button>
+              <Button onClick={handleSubmitRegistration}>
                 <IconFileText className="mr-2 h-4 w-4" />
                 Submit Registration
               </Button>

@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,43 +24,70 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconFilter, IconPlus, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const orders = [
-  {
-    id: "PO-2121",
-    supplier: "MediSupply Co.",
-    itemCount: 18,
-    total: "$4,980",
-    eta: "Apr 13, 2026",
-    status: "In Transit",
-  },
-  {
-    id: "PO-2118",
-    supplier: "HealthCore Labs",
-    itemCount: 7,
-    total: "$1,720",
-    eta: "Apr 12, 2026",
-    status: "Processing",
-  },
-  {
-    id: "PO-2112",
-    supplier: "Nova Pharma",
-    itemCount: 12,
-    total: "$2,640",
-    eta: "Apr 10, 2026",
-    status: "Delivered",
-  },
-  {
-    id: "PO-2109",
-    supplier: "PrimeCare Distributors",
-    itemCount: 4,
-    total: "$790",
-    eta: "Apr 09, 2026",
-    status: "Cancelled",
-  },
-]
+type PharmacyOrdersResponse = {
+  orders: Array<{
+    id: string
+    doctorName: string
+    items: Array<{ quantity: number }>
+    createdAt: string
+    status: string
+  }>
+}
 
 export default function Orders() {
+  const [orders, setOrders] = useState<PharmacyOrdersResponse["orders"]>([])
+  const [search, setSearch] = useState("")
+  const [supplier, setSupplier] = useState("")
+  const [itemCount, setItemCount] = useState("")
+  const [amount, setAmount] = useState("")
+  const [eta, setEta] = useState("")
+
+  const loadOrders = async () => {
+    try {
+      const data = await api.get<PharmacyOrdersResponse>(`/pharmacy/orders?q=${encodeURIComponent(search)}`)
+      setOrders(data.orders)
+    } catch {
+      setOrders([])
+    }
+  }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void loadOrders() }, [search])
+  const handleCreateOrder = async () => {
+    const count = Number(itemCount)
+    if (!supplier || !count) return
+    try {
+      await api.post("/pharmacy/orders", {
+        supplier,
+        itemName: "Bulk medicine order",
+        itemCount: count,
+        estimatedAmount: Number(amount) || 0,
+        eta,
+      })
+      setItemCount("")
+      setAmount("")
+      setEta("")
+      await loadOrders()
+    } catch {
+      // Keep list unchanged on failure.
+    }
+  }
+
+  const mapped = useMemo(
+    () =>
+      orders.map((order) => ({
+        id: order.id,
+        supplier: order.doctorName,
+        itemCount: order.items.reduce((sum, i) => sum + i.quantity, 0),
+        total: "-",
+        eta: new Date(order.createdAt).toLocaleDateString(),
+        status: order.status.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      })),
+    [orders],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -85,7 +114,7 @@ export default function Orders() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="supplier">Supplier</Label>
-                <Select>
+                <Select value={supplier} onValueChange={setSupplier}>
                   <SelectTrigger id="supplier">
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
@@ -100,20 +129,20 @@ export default function Orders() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="items">Item Count</Label>
-                  <Input id="items" type="number" placeholder="0" />
+                  <Input id="items" type="number" placeholder="0" value={itemCount} onChange={(e) => setItemCount(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="amount">Estimated Amount</Label>
-                  <Input id="amount" placeholder="$0.00" />
+                  <Input id="amount" placeholder="$0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="eta">Expected Delivery Date</Label>
-                <Input id="eta" type="date" />
+                <Input id="eta" type="date" value={eta} onChange={(e) => setEta(e.target.value)} />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Submit Order</Button>
+              <Button type="submit" onClick={handleCreateOrder}>Submit Order</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -128,7 +157,7 @@ export default function Orders() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search order ID..." className="w-[230px] pl-8" />
+              <Input placeholder="Search order ID..." className="w-[230px] pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <Button variant="outline" size="icon">
               <IconFilter className="h-4 w-4" />
@@ -148,7 +177,7 @@ export default function Orders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {mapped.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-mono text-xs">{order.id}</TableCell>
                   <TableCell className="font-medium">{order.supplier}</TableCell>

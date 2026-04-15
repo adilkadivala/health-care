@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,43 +24,89 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconFilter, IconPlus, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const appointments = [
-  {
-    id: "PA-4001",
-    date: "Apr 14, 2026",
-    time: "10:30 AM",
-    doctor: "Dr. Sarah Jenkins",
-    department: "Cardiology",
-    status: "Confirmed",
-  },
-  {
-    id: "PA-4008",
-    date: "Apr 18, 2026",
-    time: "02:00 PM",
-    doctor: "Dr. Robert Fox",
-    department: "Neurology",
-    status: "Pending",
-  },
-  {
-    id: "PA-3990",
-    date: "Apr 03, 2026",
-    time: "11:00 AM",
-    doctor: "Dr. Emily Carter",
-    department: "General Medicine",
-    status: "Completed",
-  },
-  {
-    id: "PA-3987",
-    date: "Mar 30, 2026",
-    time: "04:15 PM",
-    doctor: "Dr. Sarah Jenkins",
-    department: "Cardiology",
-    status: "Cancelled",
-  },
-]
+type PatientAppointmentsResponse = {
+  appointments: Array<{
+    id: string
+    startTime: string
+    doctorName: string
+    department: string
+    status: string
+  }>
+}
 
 export default function Appointment() {
+  const [appointments, setAppointments] = useState<PatientAppointmentsResponse["appointments"]>([])
+  const [department, setDepartment] = useState("general")
+  const [doctorName, setDoctorName] = useState("")
+  const [date, setDate] = useState("")
+  const [time, setTime] = useState("")
+  const [doctors, setDoctors] = useState<Array<{ id: string; name: string; department: string }>>([])
+
+  useEffect(() => {
+    void loadAppointments()
+    void loadDoctors()
+  }, [])
+
+  async function loadAppointments() {
+    try {
+      const data = await api.get<PatientAppointmentsResponse>("/patient/appointments")
+      setAppointments(data.appointments)
+    } catch {
+      setAppointments([])
+    }
+  }
+
+  async function loadDoctors() {
+    try {
+      const data = await api.get<{ doctors: Array<{ id: string; name: string; department: string }> }>("/patient/doctors")
+      setDoctors(data.doctors)
+    } catch {
+      setDoctors([])
+    }
+  }
+
+  const handleBookAppointment = async () => {
+    if (!date || !time) return
+    try {
+      const selectedDoctor = doctors.find((doctor) => doctor.id === doctorName)
+      if (!selectedDoctor) return
+      const startTime = new Date(`${date}T${time}:00`)
+      const endTime = new Date(startTime.getTime() + 30 * 60 * 1000)
+      await api.post("/patient/appointments", {
+        doctorId: selectedDoctor.id,
+        date: startTime.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        reasonForVisit: `${department} consultation`,
+      })
+      await loadAppointments()
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
+  const mapped = useMemo(
+    () =>
+      appointments.map((appointment) => {
+        const dt = new Date(appointment.startTime)
+        return {
+          id: appointment.id,
+          date: dt.toLocaleDateString(),
+          time: dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          doctor: appointment.doctorName,
+          department: appointment.department,
+          status: appointment.status
+            .toLowerCase()
+            .replaceAll("_", " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+        }
+      }),
+    [appointments],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -85,7 +133,7 @@ export default function Appointment() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="department">Department</Label>
-                <Select>
+                <Select value={department} onValueChange={setDepartment}>
                   <SelectTrigger id="department">
                     <SelectValue placeholder="Choose department" />
                   </SelectTrigger>
@@ -99,30 +147,32 @@ export default function Appointment() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="doctor">Preferred Doctor</Label>
-                <Select>
+                <Select value={doctorName} onValueChange={setDoctorName}>
                   <SelectTrigger id="doctor">
                     <SelectValue placeholder="Select doctor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dr-jenkins">Dr. Sarah Jenkins</SelectItem>
-                    <SelectItem value="dr-fox">Dr. Robert Fox</SelectItem>
-                    <SelectItem value="dr-carter">Dr. Emily Carter</SelectItem>
+                    {doctors
+                      .filter((doctor) => (department === "general" ? true : doctor.department.toLowerCase().includes(department.toLowerCase())))
+                      .map((doctor) => (
+                        <SelectItem key={doctor.id} value={doctor.id}>{doctor.name}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="appointment-date">Date</Label>
-                  <Input id="appointment-date" type="date" />
+                  <Input id="appointment-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="appointment-time">Time</Label>
-                  <Input id="appointment-time" type="time" />
+                  <Input id="appointment-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Confirm Booking</Button>
+              <Button type="submit" onClick={handleBookAppointment}>Confirm Booking</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -157,7 +207,7 @@ export default function Appointment() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {appointments.map((appointment) => (
+              {mapped.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-mono text-xs">{appointment.id}</TableCell>
                   <TableCell className="font-medium">{appointment.date}</TableCell>

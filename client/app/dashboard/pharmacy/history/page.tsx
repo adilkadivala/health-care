@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,47 +24,53 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconDownload, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const historyRows = [
-  {
-    txId: "TX-8801",
-    date: "2026-04-11 09:42",
-    patient: "Aarav Sharma",
-    item: "Atorvastatin 20mg",
-    quantity: "30 tabs",
-    action: "Dispensed",
-    user: "Pharm. James Wilson",
-  },
-  {
-    txId: "TX-8795",
-    date: "2026-04-10 16:15",
-    patient: "Neha Verma",
-    item: "Metformin 500mg",
-    quantity: "60 tabs",
-    action: "Returned",
-    user: "Pharm. Emily Chen",
-  },
-  {
-    txId: "TX-8788",
-    date: "2026-04-10 11:22",
-    patient: "Rohan Kulkarni",
-    item: "Levothyroxine 50mcg",
-    quantity: "30 tabs",
-    action: "Dispensed",
-    user: "Pharm. James Wilson",
-  },
-  {
-    txId: "TX-8774",
-    date: "2026-04-09 14:03",
-    patient: "Sana Iqbal",
-    item: "Insulin Glargine",
-    quantity: "2 pens",
-    action: "Adjusted",
-    user: "Pharm. Emily Chen",
-  },
-]
+type PharmacyHistoryResponse = {
+  dispensed: Array<{ id: string; patientName: string; updatedAt: string }>
+  cancelled: Array<{ id: string; patientName: string; updatedAt: string }>
+}
 
 export default function History() {
+  const [history, setHistory] = useState<PharmacyHistoryResponse | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<PharmacyHistoryResponse>("/pharmacy/history")
+        setHistory(data)
+      } catch {
+        setHistory(null)
+      }
+    }
+    void load()
+  }, [])
+
+  const historyRows = useMemo(
+    () => [
+      ...(history?.dispensed ?? []).map((row) => ({
+        txId: row.id,
+        date: new Date(row.updatedAt).toLocaleString(),
+        patient: row.patientName,
+        item: "-",
+        quantity: "-",
+        action: "Dispensed",
+        user: "Pharmacy",
+      })),
+      ...(history?.cancelled ?? []).map((row) => ({
+        txId: row.id,
+        date: new Date(row.updatedAt).toLocaleString(),
+        patient: row.patientName,
+        item: "-",
+        quantity: "-",
+        action: "Returned",
+        user: "Pharmacy",
+      })),
+    ],
+    [history],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">

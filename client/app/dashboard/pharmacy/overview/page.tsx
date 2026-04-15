@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,36 +24,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconPackage, IconPlus, IconReportMedical, IconSearch, IconTrendingUp, IconTrendingDown, IconAlertTriangle } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const pendingPrescriptions = [
-  {
-    id: "RX-5102",
-    patient: "Aarav Sharma",
-    doctor: "Dr. Sarah Jenkins",
-    medication: "Atorvastatin 20mg",
-    quantity: "30 tabs",
-    priority: "Normal",
-    status: "Ready to Dispense",
-  },
-  {
-    id: "RX-5106",
-    patient: "Neha Verma",
-    doctor: "Dr. Emily Carter",
-    medication: "Metformin 500mg",
-    quantity: "60 tabs",
-    priority: "High",
-    status: "In Verification",
-  },
-  {
-    id: "RX-5111",
-    patient: "Rohan Kulkarni",
-    doctor: "Dr. Robert Fox",
-    medication: "Levothyroxine 50mcg",
-    quantity: "30 tabs",
-    priority: "Urgent",
-    status: "Pending Approval",
-  },
-]
+type PharmacyOrdersResponse = {
+  orders: Array<{
+    id: string
+    patientName: string
+    doctorName: string
+    status: string
+    items: Array<{ medication: string; quantity: number }>
+  }>
+}
 
 const lowStockMeds = [
   { id: "MS-01", name: "Amoxicillin 500mg", stock: "18 strips", reorder: "Below 25" },
@@ -60,6 +44,56 @@ const lowStockMeds = [
 ]
 
 export default function Overview() {
+  const [pendingPrescriptions, setPendingPrescriptions] = useState<PharmacyOrdersResponse["orders"]>([])
+
+  const loadOverviewData = async () => {
+    try {
+      const data = await api.get<PharmacyOrdersResponse>("/pharmacy/orders")
+      setPendingPrescriptions(data.orders)
+    } catch {
+      setPendingPrescriptions([])
+    }
+  }
+
+  useEffect(() => {
+    void api.get("/pharmacy/overview").catch(() => undefined)
+    void loadOverviewData()
+  }, [])
+
+  const mappedOrders = useMemo(
+    () =>
+      pendingPrescriptions.map((entry) => ({
+        id: entry.id,
+        patient: entry.patientName,
+        doctor: entry.doctorName,
+        medication: entry.items.map((i) => i.medication).join(", ") || "-",
+        quantity: `${entry.items.reduce((sum, i) => sum + i.quantity, 0)} units`,
+        priority: entry.status === "PENDING" ? "High" : "Normal",
+        status:
+          entry.status === "DISPENSED"
+            ? "Ready to Dispense"
+            : entry.status === "PENDING"
+              ? "Pending Approval"
+              : "In Verification",
+      })),
+    [pendingPrescriptions],
+  )
+
+  const handlePatchOrderStatus = async (orderId: string, status: string) => {
+    const normalizedStatus =
+      status === "Ready to Dispense"
+        ? "DISPENSED"
+        : status === "Pending Approval"
+          ? "PENDING"
+          : "VERIFIED"
+    try {
+      await api.patch(`/pharmacy/orders/${orderId}`, { status: normalizedStatus })
+      await loadOverviewData()
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex items-center justify-between space-y-2 px-4 lg:px-6">
@@ -175,7 +209,7 @@ export default function Overview() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-amber-100 dark:divide-amber-900/20">
-              {pendingPrescriptions.map((entry) => (
+              {mappedOrders.map((entry) => (
                 <div key={entry.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -219,7 +253,7 @@ export default function Overview() {
                         </Select>
                       </div>
                       <DialogFooter>
-                        <Button className="bg-amber-600">Save Changes</Button>
+                        <Button className="bg-amber-600" onClick={() => handlePatchOrderStatus(entry.id, "Ready to Dispense")}>Save Changes</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>

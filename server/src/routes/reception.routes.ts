@@ -19,6 +19,7 @@ router.patch('/appointments/:id', receptionController.patchAppointment);
 router.get('/walk-ins', receptionController.getWalkIns);
 router.post('/walk-ins', receptionController.postWalkIn);
 router.patch('/walk-ins/:id', receptionController.patchWalkIn);
+router.delete('/walk-ins/:id', receptionController.deleteWalkIn);
 
 router.get('/billing', receptionController.getBilling);
 router.post('/transactions', receptionController.postTransaction);

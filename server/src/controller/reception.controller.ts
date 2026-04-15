@@ -34,7 +34,10 @@ export const getOverview = async (req: AuthRequest, res: Response) => {
 };
 export const getAppointments = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res); if (!id) return;
-  try { res.status(200).json({ appointments: await receptionService.listAppointments(id) }); } catch (e) { fail(e, res); }
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : undefined;
+    res.status(200).json({ appointments: await receptionService.listAppointments(id, q) });
+  } catch (e) { fail(e, res); }
 };
 export const getPatients = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res); if (!id) return;
@@ -56,7 +59,10 @@ export const patchAppointment = async (req: AuthRequest, res: Response) => {
 };
 export const getWalkIns = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res); if (!id) return;
-  try { res.status(200).json({ walkIns: await receptionService.listWalkIns(id) }); } catch (e) { fail(e, res); }
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : undefined;
+    res.status(200).json({ walkIns: await receptionService.listWalkIns(id, q) });
+  } catch (e) { fail(e, res); }
 };
 export const postWalkIn = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res); if (!id) return;
@@ -68,9 +74,19 @@ export const patchWalkIn = async (req: AuthRequest, res: Response) => {
   if (!walkId) { res.status(400).json({ message: 'Missing walk-in id' }); return; }
   try { res.status(200).json(await receptionService.patchWalkIn(id, walkId, req.body)); } catch (e) { fail(e, res); }
 };
+export const deleteWalkIn = async (req: AuthRequest, res: Response) => {
+  const id = userId(req, res); if (!id) return;
+  const walkId = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
+  if (!walkId) { res.status(400).json({ message: 'Missing walk-in id' }); return; }
+  try { res.status(200).json(await receptionService.deleteWalkIn(id, walkId)); } catch (e) { fail(e, res); }
+};
 export const getBilling = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res); if (!id) return;
-  try { res.status(200).json(await receptionService.getBilling(id)); } catch (e) { fail(e, res); }
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : undefined;
+    const status = typeof req.query.status === 'string' ? (req.query.status as TransactionStatus) : undefined;
+    res.status(200).json(await receptionService.getBilling(id, { q, status }));
+  } catch (e) { fail(e, res); }
 };
 export const postTransaction = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res); if (!id) return;

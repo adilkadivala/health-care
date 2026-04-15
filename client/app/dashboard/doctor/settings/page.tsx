@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -6,8 +8,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useEffect } from "react"
+import { api } from "@/lib/http"
 
 export default function Settings() {
+  useEffect(() => {
+    void api.get("/doctor/me").catch(() => undefined)
+  }, [])
+
+  const handleSaveSettings = async () => {
+    const signature = (document.getElementById("signature") as HTMLInputElement | null)?.value ?? ""
+    try {
+      await api.patch("/doctor/me", { preferences: { signature } })
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -85,7 +102,7 @@ export default function Settings() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Changes</Button>
+              <Button onClick={handleSaveSettings}>Save Changes</Button>
             </CardFooter>
           </Card>
 
@@ -122,7 +139,7 @@ export default function Settings() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline">Update Notifications</Button>
+              <Button variant="outline" onClick={handleSaveSettings}>Update Notifications</Button>
             </CardFooter>
           </Card>
 

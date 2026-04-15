@@ -1,58 +1,31 @@
-import React from 'react'
+"use client"
+
+import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { IconActivity, IconLogin, IconSettings, IconUserPlus } from "@tabler/icons-react"
+import { api } from "@/lib/http"
 
-const activities = [
-  {
-    id: 1,
-    user: "James Wilson",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    action: "Updated system settings",
-    time: "2 minutes ago",
-    type: "system",
-    icon: <IconSettings className="w-4 h-4" />
-  },
-  {
-    id: 2,
-    user: "System",
-    avatar: "https://ui-avatars.com/api/?name=System&background=random",
-    action: "Daily backup completed successfully",
-    time: "1 hour ago",
-    type: "automated",
-    icon: <IconActivity className="w-4 h-4" />
-  },
-  {
-    id: 3,
-    user: "Dr. Sarah Jenkins",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    action: "Logged into the portal",
-    time: "3 hours ago",
-    type: "auth",
-    icon: <IconLogin className="w-4 h-4" />
-  },
-  {
-    id: 4,
-    user: "Admin",
-    avatar: "https://ui-avatars.com/api/?name=Admin&background=random",
-    action: "Added new staff member 'Emily Chen'",
-    time: "Yesterday, 14:30",
-    type: "user",
-    icon: <IconUserPlus className="w-4 h-4" />
-  },
-  {
-    id: 5,
-    user: "Admin",
-    avatar: "https://ui-avatars.com/api/?name=Admin&background=random",
-    action: "Added new staff member 'Michael Chang'",
-    time: "Yesterday, 14:25",
-    type: "user",
-    icon: <IconUserPlus className="w-4 h-4" />
-  }
-]
+type AdminActivityResponse = {
+  items: Array<{ id: string; lane: string; title: string; status: string; time: string }>
+}
 
 export default function Activity() {
+  const [activities, setActivities] = useState<AdminActivityResponse["items"]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<AdminActivityResponse>("/admin/activity")
+        setActivities(data.items)
+      } catch {
+        setActivities([])
+      }
+    }
+    void load()
+  }, [])
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -76,21 +49,21 @@ export default function Activity() {
             {activities.map((activity) => (
               <div key={activity.id} className="flex items-center">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={activity.avatar} alt="Avatar" />
-                  <AvatarFallback>{activity.user.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(activity.lane)}`} alt="Avatar" />
+                  <AvatarFallback>{activity.lane.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="ml-4 space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    <span className="font-semibold text-primary">{activity.user}</span> {activity.action}
+                    <span className="font-semibold text-primary">{activity.lane}</span> {activity.title}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {activity.time}
+                    {new Date(activity.time).toLocaleString()}
                   </p>
                 </div>
                 <div className="ml-auto font-medium">
                   <Badge variant="outline" className="flex items-center gap-1">
-                     {activity.icon}
-                     <span className="capitalize">{activity.type}</span>
+                     {activity.lane === "Users" ? <IconUserPlus className="w-4 h-4" /> : activity.lane === "Appointments" ? <IconLogin className="w-4 h-4" /> : activity.lane === "Billing" ? <IconSettings className="w-4 h-4" /> : <IconActivity className="w-4 h-4" />}
+                     <span className="capitalize">{activity.status.toLowerCase()}</span>
                   </Badge>
                 </div>
               </div>
