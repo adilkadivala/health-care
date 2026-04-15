@@ -1,6 +1,8 @@
+"use client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
 import {
   IconActivity,
   IconCalendarEvent,
@@ -8,56 +10,27 @@ import {
   IconMessageCircle,
   IconStethoscope,
 } from "@tabler/icons-react"
+import { api } from "@/lib/http"
 
-const activities = [
-  {
-    id: 1,
-    user: "Dr. Sarah Jenkins",
-    avatar: "https://i.pravatar.cc/150?u=doctor-activity-1",
-    action: "Completed consultation for patient Aarav Sharma",
-    time: "8 minutes ago",
-    type: "consultation",
-    icon: <IconStethoscope className="h-4 w-4" />,
-  },
-  {
-    id: 2,
-    user: "Lab System",
-    avatar: "https://ui-avatars.com/api/?name=Lab+System&background=random",
-    action: "Uploaded new thyroid profile report for review",
-    time: "24 minutes ago",
-    type: "lab",
-    icon: <IconFileText className="h-4 w-4" />,
-  },
-  {
-    id: 3,
-    user: "Care Coordinator",
-    avatar: "https://ui-avatars.com/api/?name=Care+Coordinator&background=random",
-    action: "Rescheduled follow up appointment for patient Neha Verma",
-    time: "1 hour ago",
-    type: "appointment",
-    icon: <IconCalendarEvent className="h-4 w-4" />,
-  },
-  {
-    id: 4,
-    user: "Patient Portal",
-    avatar: "https://ui-avatars.com/api/?name=Patient+Portal&background=random",
-    action: "Received a new patient query in secure messaging",
-    time: "2 hours ago",
-    type: "message",
-    icon: <IconMessageCircle className="h-4 w-4" />,
-  },
-  {
-    id: 5,
-    user: "System",
-    avatar: "https://ui-avatars.com/api/?name=System&background=random",
-    action: "Daily summary and chart notes were synced successfully",
-    time: "Yesterday, 17:40",
-    type: "system",
-    icon: <IconActivity className="h-4 w-4" />,
-  },
-]
+type DoctorActivityResponse = {
+  items: Array<{ id: string; title: string; time: string; lane: string; status: string }>
+}
 
 export default function Activity() {
+  const [activities, setActivities] = useState<DoctorActivityResponse["items"]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<DoctorActivityResponse>("/doctor/activity")
+        setActivities(data.items)
+      } catch {
+        setActivities([])
+      }
+    }
+    void load()
+  }, [])
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -81,19 +54,19 @@ export default function Activity() {
             {activities.map((activity) => (
               <div key={activity.id} className="flex items-center">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={activity.avatar} alt={activity.user} />
-                  <AvatarFallback>{activity.user.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(activity.lane)}`} alt={activity.lane} />
+                  <AvatarFallback>{activity.lane.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="ml-4 space-y-1">
                   <p className="text-sm leading-none">
-                    <span className="font-semibold text-primary">{activity.user}</span> {activity.action}
+                    <span className="font-semibold text-primary">{activity.lane}</span> {activity.title}
                   </p>
-                  <p className="text-sm text-muted-foreground">{activity.time}</p>
+                  <p className="text-sm text-muted-foreground">{new Date(activity.time).toLocaleString()}</p>
                 </div>
                 <div className="ml-auto">
                   <Badge variant="outline" className="flex items-center gap-1">
-                    {activity.icon}
-                    <span className="capitalize">{activity.type}</span>
+                    {activity.lane === "Lab" ? <IconFileText className="h-4 w-4" /> : activity.lane === "Appointment" ? <IconCalendarEvent className="h-4 w-4" /> : activity.lane === "Clinical" ? <IconStethoscope className="h-4 w-4" /> : activity.lane === "Pharmacy" ? <IconMessageCircle className="h-4 w-4" /> : <IconActivity className="h-4 w-4" />}
+                    <span className="capitalize">{activity.status.toLowerCase()}</span>
                   </Badge>
                 </div>
               </div>

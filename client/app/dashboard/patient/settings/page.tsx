@@ -1,184 +1,83 @@
-"use client"
-
-import React, { useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { IconReceipt2 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
-export default function Settings() {
-  const [activeTab, setActiveTab] = useState("general")
-
+export default function DoctorBillingPage() {
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-          <p className="text-muted-foreground">
-            Manage notifications, privacy controls, and account preferences.
-          </p>
+    <div className="flex flex-col gap-6 px-4 lg:px-6 py-6 pt-0">
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
+            <IconReceipt2 className="size-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Consultation Billing</h1>
+            <p className="text-muted-foreground text-sm">Review charges and submit new billing codes.</p>
+          </div>
         </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>Add New Charge</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Consultation Charge</DialogTitle>
+              <DialogDescription>Input ICD-10 and CPT codes for the visit.</DialogDescription>
+            </DialogHeader>
+            <div className="py-6 flex justify-center text-muted-foreground">
+              Billing Form Placeholder
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline">Cancel</Button>
+              <Button>Submit</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="mt-6 flex flex-col gap-6 md:flex-row">
-        <aside className="w-full shrink-0 md:w-64">
-          <nav className="flex space-x-2 overflow-x-auto md:flex-col md:space-x-0 md:space-y-1">
-            <Button variant={activeTab === "general" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("general")}>
-              General
-            </Button>
-            <Button variant={activeTab === "notifications" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("notifications")}>
-              Notifications
-            </Button>
-            <Button variant={activeTab === "privacy" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("privacy")}>
-              Privacy
-            </Button>
-            <Button variant={activeTab === "security" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("security")}>
-              Security
-            </Button>
-          </nav>
-        </aside>
-
-        <div className="flex-1 space-y-6">
-          {activeTab === "general" && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Preferences</CardTitle>
-                  <CardDescription>
-                    Update basic account details used for communication.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" defaultValue="aarav.sharma@email.com" />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" defaultValue="+1 800 222 0192" />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button>Save Preferences</Button>
-                </CardFooter>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Theme Preference</CardTitle>
-                  <CardDescription>Choose how the patient portal should appear.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ToggleGroup type="single" defaultValue="system" className="justify-start">
-                    <ToggleGroupItem value="light" aria-label="Light mode">
-                      Light
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="dark" aria-label="Dark mode">
-                      Dark
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="system" aria-label="System mode">
-                      System
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                </CardContent>
-              </Card>
-            </>
-          )}
-
-          {activeTab === "notifications" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Control how and when you receive care updates.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Recent Charges</CardTitle>
+            <CardDescription>History of your submitted procedure bills.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { pt: "Alice Smith", date: "Today", amount: "$150.00", status: "Pending" },
+                { pt: "Bob Jones", date: "Yesterday", amount: "$250.00", status: "Approved" },
+                { pt: "Charlie Brown", date: "Aug 12", amount: "$90.00", status: "Approved" },
+              ].map((bill, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div>
-                    <p className="text-sm font-medium">Appointment reminders</p>
-                    <p className="text-sm text-muted-foreground">Alerts 24 hours before your visit.</p>
+                    <div className="font-semibold">{bill.pt}</div>
+                    <div className="text-xs text-muted-foreground">{bill.date}</div>
                   </div>
-                  <Switch defaultChecked />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Lab report updates</p>
-                    <p className="text-sm text-muted-foreground">Notify when new reports are available.</p>
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono">{bill.amount}</span>
+                    <Badge variant={bill.status === "Approved" ? "default" : "secondary"}>{bill.status}</Badge>
                   </div>
-                  <Switch defaultChecked />
                 </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Doctor messages</p>
-                    <p className="text-sm text-muted-foreground">Receive instant alerts for secure messages.</p>
-                  </div>
-                  <Switch />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="outline">Update Notifications</Button>
-              </CardFooter>
-            </Card>
-          )}
-
-          {activeTab === "privacy" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Privacy</CardTitle>
-                <CardDescription>Control how your medical data is shared and accessed.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Research Participation</p>
-                    <p className="text-sm text-muted-foreground">Allow anonymized data to be used for research.</p>
-                  </div>
-                  <Switch />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Family Access</p>
-                    <p className="text-sm text-muted-foreground">Allow designated family members to view your portal.</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>Save Privacy Changes</Button>
-              </CardFooter>
-            </Card>
-          )}
-
-          {activeTab === "security" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Manage your authentication and login activity.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-2">
-                  <Label>Change Password</Label>
-                  <Button variant="secondary" className="w-fit">Update Password</Button>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Two-Factor Authentication</p>
-                    <p className="text-sm text-muted-foreground">Secure your account with a mobile app.</p>
-                  </div>
-                  <Button variant="outline" size="sm">Enable 2FA</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+             <div className="flex justify-between items-center p-3 bg-secondary rounded text-sm font-medium">
+               <span>This Week</span> <span>$2,450.00</span>
+             </div>
+             <div className="flex justify-between items-center p-3 bg-secondary rounded text-sm font-medium">
+               <span>Pending Claims</span> <span>5</span>
+             </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

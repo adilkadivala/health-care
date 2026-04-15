@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,43 +24,48 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconDownload, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const reports = [
-  {
-    id: "LR-9901",
-    date: "Apr 10, 2026",
-    test: "Complete Blood Count",
-    doctor: "Dr. Sarah Jenkins",
-    status: "Ready",
-    summary: "Within normal range",
-  },
-  {
-    id: "LR-9884",
-    date: "Apr 02, 2026",
-    test: "Thyroid Profile",
-    doctor: "Dr. Robert Fox",
-    status: "Ready",
-    summary: "TSH slightly below range",
-  },
-  {
-    id: "LR-9842",
-    date: "Mar 22, 2026",
-    test: "Liver Function Test",
-    doctor: "Dr. Emily Carter",
-    status: "Processing",
-    summary: "Awaiting final verification",
-  },
-  {
-    id: "LR-9790",
-    date: "Mar 15, 2026",
-    test: "HbA1c",
-    doctor: "Dr. Emily Carter",
-    status: "Reviewed",
-    summary: "6.9% (follow up suggested)",
-  },
-]
+type PatientReportsResponse = {
+  labReports: Array<{
+    id: string
+    createdAt: string
+    title: string
+    doctorName: string
+    status: string
+    summary: string | null
+  }>
+}
 
 export default function LabReport() {
+  const [reports, setReports] = useState<PatientReportsResponse["labReports"]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<PatientReportsResponse>("/patient/lab-reports")
+        setReports(data.labReports)
+      } catch {
+        setReports([])
+      }
+    }
+    void load()
+  }, [])
+
+  const mapped = useMemo(
+    () =>
+      reports.map((r) => ({
+        id: r.id,
+        date: new Date(r.createdAt).toLocaleDateString(),
+        test: r.title,
+        doctor: r.doctorName,
+        status: r.status.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        summary: r.summary ?? "-",
+      })),
+    [reports],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -142,7 +149,7 @@ export default function LabReport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reports.map((report) => (
+              {mapped.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell className="font-mono text-xs">{report.id}</TableCell>
                   <TableCell>{report.date}</TableCell>

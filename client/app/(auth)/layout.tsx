@@ -1,6 +1,9 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Hospital } from "lucide-react"
+import { AuthProvider } from "@/lib/auth-context"
+
+import { AuthRedirectIfSession } from "@/components/auth-redirect-if-session"
 
 export default function RootLayout({
   children,
@@ -19,17 +22,22 @@ export default function RootLayout({
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full md:max-w-1/2">{children}</div>
+          <div className="w-full md:max-w-1/2">
+            <AuthProvider>
+              <AuthRedirectIfSession />
+              {children}
+            </AuthProvider>
+          </div>
         </div>
       </div>
       <div className="relative hidden h-full w-full items-center justify-center overflow-hidden bg-linear-to-tl from-accent to-accent-foreground/10 lg:flex">
         <div className="absolute top-15 left-15 h-full w-full">
-        <Image
+          <Image
             width={1000}
             height={1000}
-          src="/patient.png"
-          alt="dashboard-img"
-        />
+            src="/patient.png"
+            alt="dashboard-img"
+          />
         </div>
       </div>
     </div>

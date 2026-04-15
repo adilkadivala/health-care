@@ -14,9 +14,12 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/http"
+import { useAuth } from "@/lib/auth-context"
+import { getDefaultDashboardPath } from "@/lib/auth-routes"
 
 export default function SignUp() {
   const router = useRouter();
+  const { refreshSession } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,24 +35,27 @@ export default function SignUp() {
 
     try {
       // Create user
-      const userRes = await api.post<any>('/auth/register', {
+      await api.post("/auth/register", {
         firstName,
         lastName,
         email,
         password,
-        role: role.toUpperCase()
+        role: role.toUpperCase(),
       });
 
-      // Automatically login on success
-      const loginRes = await api.post<{ token: string, user: { role: string } }>('/auth/login', {
+      const loginRes = await api.post<{
+        token: string
+        user: { role: string }
+      }>("/auth/login", {
         email,
-        password
+        password,
       });
 
-      localStorage.setItem('token', loginRes.token);
-      localStorage.setItem('user', JSON.stringify(loginRes.user));
-      
-      router.push(`/dashboard/${loginRes.user.role.toLowerCase()}/overview`);
+      localStorage.setItem("token", loginRes.token);
+      localStorage.setItem("user", JSON.stringify(loginRes.user));
+
+      await refreshSession();
+      router.push(getDefaultDashboardPath(loginRes.user.role));
     } catch (err: any) {
       setError(err.message);
     } finally {

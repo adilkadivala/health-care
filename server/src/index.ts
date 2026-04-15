@@ -1,26 +1,9 @@
-import express from "express";
-import cors from "cors";
-import routes from "./routes";
+import app from "./app";
 
-const app = express();
+const PORT = Number(process.env.PORT) || 8000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Routing
-app.use("/api", routes);
-
-// Fallback test route
-app.get("/", (req, res) => {
-  res.send("Hello from Health Care server!");
-});
-
-const PORT = process.env.PORT || 8000;
-
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is running on port ${PORT}`);
   });
 }

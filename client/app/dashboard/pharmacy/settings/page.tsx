@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useEffect } from "react"
+import { api } from "@/lib/http"
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("general")

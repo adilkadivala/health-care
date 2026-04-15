@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,56 +23,76 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconCalendarEvent, IconFileText, IconSearch, IconTrendingUp, IconTrendingDown, IconHeartbeat } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const upcomingAppointments = [
-  {
-    id: "PA-4001",
-    date: "Apr 14, 2026",
-    time: "10:30 AM",
-    doctor: "Dr. Sarah Jenkins",
-    department: "Cardiology",
-    status: "Confirmed",
-  },
-  {
-    id: "PA-4008",
-    date: "Apr 18, 2026",
-    time: "02:00 PM",
-    doctor: "Dr. Robert Fox",
-    department: "Neurology",
-    status: "Pending",
-  },
-  {
-    id: "PA-4013",
-    date: "Apr 23, 2026",
-    time: "09:15 AM",
-    doctor: "Dr. Emily Carter",
-    department: "General Medicine",
-    status: "Confirmed",
-  },
-]
-
-const reminders = [
-  {
-    id: "RM-101",
-    title: "Take evening medication",
-    note: "Atorvastatin 20mg after dinner",
-    due: "Today, 08:00 PM",
-  },
-  {
-    id: "RM-102",
-    title: "Upload previous ECG",
-    note: "Needed before cardiology follow up",
-    due: "Tomorrow, 11:00 AM",
-  },
-  {
-    id: "RM-103",
-    title: "Fasting before blood test",
-    note: "No food 10 hours before sample collection",
-    due: "Apr 17, 10:00 PM",
-  },
-]
+type PatientOverviewResponse = {
+  metrics: {
+    activePrescriptions: number
+    profileCompletion: number
+  }
+  nextAppointment: {
+    startTime: string
+    doctorName: string
+    department: string
+  } | null
+  appointments: Array<{
+    id: string
+    startTime: string
+    doctorName: string
+    department: string
+    status: string
+  }>
+  reminders: Array<{
+    id: string
+    title: string
+    note: string
+    due: string
+  }>
+}
 
 export default function Overview() {
+  const [overview, setOverview] = useState<PatientOverviewResponse | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<PatientOverviewResponse>("/patient/overview")
+        setOverview(data)
+      } catch {
+        setOverview(null)
+      }
+    }
+    void load()
+  }, [])
+
+  const upcomingAppointments = useMemo(
+    () =>
+      (overview?.appointments ?? []).map((appointment) => {
+        const dt = new Date(appointment.startTime)
+        return {
+          id: appointment.id,
+          date: dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+          time: dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          doctor: appointment.doctorName,
+          department: appointment.department,
+          status: appointment.status.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        }
+      }),
+    [overview],
+  )
+
+  const reminders = useMemo(
+    () =>
+      (overview?.reminders ?? []).map((r) => ({
+        ...r,
+        due: new Date(r.due).toLocaleString(),
+      })),
+    [overview],
+  )
+
+  const nextDate = overview?.nextAppointment ? new Date(overview.nextAppointment.startTime) : null
+
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex items-center justify-between space-y-2 px-4 lg:px-6">
@@ -119,12 +141,14 @@ export default function Overview() {
           </div>
           <CardHeader className="relative z-10">
             <CardDescription className="text-emerald-100 font-medium">Your Next Appointment</CardDescription>
-            <CardTitle className="text-3xl font-bold mt-1">Apr 14, 2026 at 10:30 AM</CardTitle>
+            <CardTitle className="text-3xl font-bold mt-1">
+              {nextDate ? `${nextDate.toLocaleDateString()} at ${nextDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "No upcoming appointment"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <p className="font-medium text-emerald-50 text-lg">Dr. Sarah Jenkins</p>
-              <p className="text-emerald-200">Cardiology Department</p>
+              <p className="font-medium text-emerald-50 text-lg">{overview?.nextAppointment?.doctorName ?? "-"}</p>
+              <p className="text-emerald-200">{overview?.nextAppointment?.department ?? "-"}</p>
             </div>
             
             <Dialog>
@@ -168,7 +192,7 @@ export default function Overview() {
             <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 shadow-none border-emerald-100 dark:border-emerald-900/50">
               <CardHeader className="p-4 pb-2">
                 <CardDescription>Active Prescriptions</CardDescription>
-                <CardTitle className="text-2xl tabular-nums">5</CardTitle>
+                <CardTitle className="text-2xl tabular-nums">{overview?.metrics.activePrescriptions ?? 0}</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <p className="text-xs text-muted-foreground">2 need refill this week.</p>
@@ -177,7 +201,7 @@ export default function Overview() {
             <Card className="shadow-none border-dashed border-2 bg-transparent">
               <CardHeader className="p-4 pb-2">
                 <CardDescription>Profile Completion</CardDescription>
-                <CardTitle className="text-2xl tabular-nums text-emerald-600 dark:text-emerald-500">92%</CardTitle>
+                <CardTitle className="text-2xl tabular-nums text-emerald-600 dark:text-emerald-500">{overview?.metrics.profileCompletion ?? 0}%</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <p className="text-xs text-muted-foreground">Add insurance copy to reach 100%.</p>

@@ -1,4 +1,6 @@
-import React from 'react'
+"use client"
+
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -13,53 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { IconDownload, IconSearch } from "@tabler/icons-react"
 
-const auditLogs = [
-  {
-    id: "AL-1001",
-    timestamp: "2026-04-11 10:45:22",
-    user: "Admin",
-    event: "Access Granted",
-    resource: "/api/users/add",
-    ip: "192.168.1.45",
-    status: "Success",
-  },
-  {
-    id: "AL-1002",
-    timestamp: "2026-04-11 10:42:15",
-    user: "System",
-    event: "Data Sync",
-    resource: "Patient Database",
-    ip: "10.0.0.1",
-    status: "Success",
-  },
-  {
-    id: "AL-1003",
-    timestamp: "2026-04-11 09:15:00",
-    user: "Dr. Sarah Jenkins",
-    event: "Record Modified",
-    resource: "Patient ID #88219",
-    ip: "192.168.1.102",
-    status: "Success",
-  },
-  {
-    id: "AL-1004",
-    timestamp: "2026-04-10 23:59:59",
-    user: "Unknown",
-    event: "Failed Login",
-    resource: "/auth/login",
-    ip: "45.22.19.11",
-    status: "Failed",
-  },
-  {
-    id: "AL-1005",
-    timestamp: "2026-04-10 18:30:45",
-    user: "James Wilson",
-    event: "Settings Updated",
-    resource: "System Config",
-    ip: "192.168.1.45",
-    status: "Success",
-  },
-]
+import { api } from "@/lib/http"
 
 import {
   Dialog,
@@ -74,6 +30,26 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Audit() {
+  const [logs, setLogs] = useState<Array<{ id: string; category: string; message: string; at: string }>>([])
+  const [query, setQuery] = useState("")
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<{ logs: Array<{ id: string; category: string; message: string; at: string }> }>("/admin/audit")
+        setLogs(data.logs)
+      } catch {
+        setLogs([])
+      }
+    }
+    void load()
+  }, [])
+  const filtered = useMemo(
+    () => logs.filter((log) => `${log.id} ${log.category} ${log.message}`.toLowerCase().includes(query.toLowerCase())),
+    [logs, query],
+  )
+  const handleDownload = () => {
+    window.open(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/admin/audit/export`, "_blank")
+  }
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -127,7 +103,7 @@ export default function Audit() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Download</Button>
+                <Button type="submit" onClick={handleDownload}>Download</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -145,7 +121,7 @@ export default function Audit() {
           <div className="flex space-x-2">
              <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search event or IP..." className="pl-8 w-[250px]" />
+              <Input placeholder="Search event or IP..." className="pl-8 w-[250px]" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
           </div>
         </CardHeader>
@@ -163,19 +139,19 @@ export default function Audit() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {auditLogs.map((log) => (
+              {filtered.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="font-mono text-xs">{log.id}</TableCell>
-                  <TableCell className="text-muted-foreground">{log.timestamp}</TableCell>
-                  <TableCell>{log.user}</TableCell>
-                  <TableCell className="font-medium">{log.event}</TableCell>
-                  <TableCell className="text-muted-foreground">{log.resource}</TableCell>
-                  <TableCell className="font-mono text-xs">{log.ip}</TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(log.at).toLocaleString()}</TableCell>
+                  <TableCell>{log.category}</TableCell>
+                  <TableCell className="font-medium">{log.message}</TableCell>
+                  <TableCell className="text-muted-foreground">System</TableCell>
+                  <TableCell className="font-mono text-xs">-</TableCell>
                   <TableCell>
-                    <Badge variant={log.status === 'Success' ? 'default' : 'destructive'}
-                           className={log.status === 'Success' ? 'bg-green-500/15 text-green-700 hover:bg-green-500/25 border-green-200 dark:text-green-400 dark:border-green-900' : ''}
+                    <Badge variant="default"
+                           className='bg-green-500/15 text-green-700 hover:bg-green-500/25 border-green-200 dark:text-green-400 dark:border-green-900'
                     >
-                      {log.status}
+                      Success
                     </Badge>
                   </TableCell>
                 </TableRow>

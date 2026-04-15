@@ -1,13 +1,18 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes';
+import doctorRoutes from './doctor.routes';
+import patientRoutes from './patient.routes';
+import adminRoutes from './admin.routes';
+import pharmacyRoutes from './pharmacy.routes';
+import receptionRoutes from './reception.routes';
 
 const router = Router();
 
-// Modular routing
 router.use('/auth', authRoutes);
-
-// You can add more routes here
-// router.use('/users', userRoutes);
-// router.use('/appointments', appointmentRoutes);
+router.use('/doctor', doctorRoutes);
+router.use('/patient', patientRoutes);
+router.use('/admin', adminRoutes);
+router.use('/pharmacy', pharmacyRoutes);
+router.use('/reception', receptionRoutes);
 
 export default router;

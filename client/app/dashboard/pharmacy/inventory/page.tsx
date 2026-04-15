@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,47 +24,69 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconPackageImport, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const inventoryItems = [
-  {
-    sku: "MED-001",
-    name: "Atorvastatin 20mg",
-    category: "Cardiology",
-    stock: 132,
-    reorderLevel: 80,
-    expiry: "2026-09-12",
-    status: "Healthy",
-  },
-  {
-    sku: "MED-013",
-    name: "Insulin Glargine",
-    category: "Endocrinology",
-    stock: 14,
-    reorderLevel: 20,
-    expiry: "2026-06-20",
-    status: "Low Stock",
-  },
-  {
-    sku: "MED-022",
-    name: "Amoxicillin 500mg",
-    category: "Antibiotics",
-    stock: 19,
-    reorderLevel: 25,
-    expiry: "2026-05-03",
-    status: "Low Stock",
-  },
-  {
-    sku: "MED-040",
-    name: "Levothyroxine 50mcg",
-    category: "Endocrinology",
-    stock: 87,
-    reorderLevel: 40,
-    expiry: "2027-01-15",
-    status: "Healthy",
-  },
-]
+type PharmacyInventoryResponse = {
+  inventory: Array<{
+    id: string
+    name: string
+    stockQuantity: number
+    updatedAt: string
+  }>
+}
 
 export default function Inventory() {
+  const [inventoryItems, setInventoryItems] = useState<PharmacyInventoryResponse["inventory"]>([])
+  const [medicineName, setMedicineName] = useState("")
+  const [quantity, setQuantity] = useState("")
+  const [search, setSearch] = useState("")
+
+  const loadInventory = async () => {
+    try {
+      const data = await api.get<PharmacyInventoryResponse>(`/pharmacy/inventory?q=${encodeURIComponent(search)}`)
+      setInventoryItems(data.inventory)
+    } catch {
+      setInventoryItems([])
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    void loadInventory()
+  }, [search])
+
+  const handleSaveBatch = async () => {
+    const qty = Number(quantity)
+    if (!medicineName || Number.isNaN(qty)) return
+    const match = inventoryItems.find((item) =>
+      item.name.toLowerCase().includes(medicineName.toLowerCase()),
+    )
+    if (!match) return
+    try {
+      await api.patch(`/pharmacy/inventory/${match.id}`, {
+        stockQuantity: qty,
+      })
+      await loadInventory()
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
+  const mapped = useMemo(
+    () =>
+      inventoryItems.map((item) => ({
+        sku: item.id,
+        name: item.name,
+        category: "-",
+        stock: item.stockQuantity,
+        reorderLevel: 20,
+        expiry: new Date(item.updatedAt).toLocaleDateString(),
+        status: item.stockQuantity < 20 ? "Low Stock" : "Healthy",
+      })),
+    [inventoryItems],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -89,12 +113,12 @@ export default function Inventory() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="medicine">Medicine</Label>
-                <Input id="medicine" placeholder="Medicine name" />
+                <Input id="medicine" placeholder="Medicine name" value={medicineName} onChange={(e) => setMedicineName(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="quantity">Quantity</Label>
-                  <Input id="quantity" type="number" placeholder="0" />
+                  <Input id="quantity" type="number" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="reorder">Reorder Level</Label>
@@ -122,7 +146,7 @@ export default function Inventory() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Save Batch</Button>
+              <Button type="submit" onClick={handleSaveBatch}>Save Batch</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -136,7 +160,7 @@ export default function Inventory() {
           </div>
           <div className="relative">
             <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search SKU or medicine..." className="w-[260px] pl-8" />
+            <Input placeholder="Search SKU or medicine..." className="w-[260px] pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </CardHeader>
         <CardContent>
@@ -153,7 +177,7 @@ export default function Inventory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventoryItems.map((item) => (
+              {mapped.map((item) => (
                 <TableRow key={item.sku}>
                   <TableCell className="font-mono text-xs">{item.sku}</TableCell>
                   <TableCell className="font-medium">{item.name}</TableCell>

@@ -128,6 +128,7 @@ exports.Prisma.UserScalarFieldEnum = {
   firstName: 'firstName',
   lastName: 'lastName',
   phone: 'phone',
+  avatarUrl: 'avatarUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -139,7 +140,8 @@ exports.Prisma.PatientScalarFieldEnum = {
   bloodGroup: 'bloodGroup',
   allergies: 'allergies',
   address: 'address',
-  medicalHistory: 'medicalHistory'
+  medicalHistory: 'medicalHistory',
+  preferences: 'preferences'
 };
 
 exports.Prisma.DoctorScalarFieldEnum = {
@@ -148,26 +150,30 @@ exports.Prisma.DoctorScalarFieldEnum = {
   specialization: 'specialization',
   licenseNumber: 'licenseNumber',
   department: 'department',
-  availability: 'availability'
+  availability: 'availability',
+  preferences: 'preferences'
 };
 
 exports.Prisma.AdminScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  accessLevel: 'accessLevel'
+  accessLevel: 'accessLevel',
+  preferences: 'preferences'
 };
 
 exports.Prisma.ReceptionistScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   shiftHours: 'shiftHours',
-  deskNumber: 'deskNumber'
+  deskNumber: 'deskNumber',
+  preferences: 'preferences'
 };
 
 exports.Prisma.PharmacistScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  licenseNumber: 'licenseNumber'
+  licenseNumber: 'licenseNumber',
+  preferences: 'preferences'
 };
 
 exports.Prisma.AppointmentScalarFieldEnum = {
@@ -194,8 +200,22 @@ exports.Prisma.MedicalRecordScalarFieldEnum = {
   treatment: 'treatment',
   notes: 'notes',
   files: 'files',
+  chartSignedAt: 'chartSignedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LabReportScalarFieldEnum = {
+  id: 'id',
+  patientId: 'patientId',
+  doctorId: 'doctorId',
+  title: 'title',
+  summary: 'summary',
+  status: 'status',
+  fileUrls: 'fileUrls',
+  resultNotes: 'resultNotes',
+  createdAt: 'createdAt',
+  reviewedAt: 'reviewedAt'
 };
 
 exports.Prisma.PrescriptionScalarFieldEnum = {
@@ -298,6 +318,13 @@ exports.AppointmentStatus = exports.$Enums.AppointmentStatus = {
   NO_SHOW: 'NO_SHOW'
 };
 
+exports.LabReportStatus = exports.$Enums.LabReportStatus = {
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  READY: 'READY',
+  CRITICAL: 'CRITICAL',
+  REVIEWED: 'REVIEWED'
+};
+
 exports.PrescriptionStatus = exports.$Enums.PrescriptionStatus = {
   PENDING: 'PENDING',
   DISPENSED: 'DISPENSED',
@@ -320,6 +347,7 @@ exports.Prisma.ModelName = {
   Pharmacist: 'Pharmacist',
   Appointment: 'Appointment',
   MedicalRecord: 'MedicalRecord',
+  LabReport: 'LabReport',
   Prescription: 'Prescription',
   PrescriptionItem: 'PrescriptionItem',
   Medication: 'Medication',

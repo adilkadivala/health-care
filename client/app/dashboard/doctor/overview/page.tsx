@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,60 +24,110 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconCalendarEvent, IconFileText, IconSearch, IconStethoscope, IconTrendingUp, IconTrendingDown } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const todaysAppointments = [
-  {
-    id: "A-2401",
-    time: "09:00 AM",
-    patient: "Aarav Sharma",
-    type: "Follow Up",
-    status: "Checked In",
-  },
-  {
-    id: "A-2402",
-    time: "09:30 AM",
-    patient: "Neha Verma",
-    type: "Consultation",
-    status: "In Progress",
-  },
-  {
-    id: "A-2403",
-    time: "10:15 AM",
-    patient: "Riya Patel",
-    type: "Review",
-    status: "Scheduled",
-  },
-  {
-    id: "A-2404",
-    time: "11:00 AM",
-    patient: "Kabir Khan",
-    type: "New Patient",
-    status: "Scheduled",
-  },
-]
-
-const priorityReports = [
-  {
-    id: "LR-8812",
-    patient: "Nikhil Joshi",
-    test: "CBC + ESR",
-    status: "Pending Review",
-  },
-  {
-    id: "LR-8815",
-    patient: "Sana Iqbal",
-    test: "Liver Function Panel",
-    status: "Ready",
-  },
-  {
-    id: "LR-8819",
-    patient: "Rohan Kulkarni",
-    test: "Thyroid Profile",
-    status: "Critical",
-  },
-]
+type DoctorOverviewResponse = {
+  metrics: {
+    appointmentsToday: number
+    consultationsClosed: number
+    pendingReports: number
+    unsignedCharts: number
+  }
+  appointments: Array<{
+    id: string
+    time: string
+    patientName: string
+    reasonForVisit: string | null
+    status: string
+  }>
+  labReports: Array<{
+    id: string
+    patientName: string
+    title: string
+    status: string
+  }>
+}
 
 export default function Overview() {
+  const [overview, setOverview] = useState<DoctorOverviewResponse | null>(null)
+  const [patientSearch, setPatientSearch] = useState("")
+  const [foundPatients, setFoundPatients] = useState<Array<{ id: string; name: string }>>([])
+  const [bookingName, setBookingName] = useState("")
+  const [bookingTime, setBookingTime] = useState("")
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<DoctorOverviewResponse>("/doctor/overview")
+        setOverview(data)
+      } catch {
+        setOverview(null)
+      }
+    }
+    void load()
+  }, [])
+
+  const todaysAppointments = useMemo(
+    () =>
+      (overview?.appointments ?? []).map((a) => ({
+        id: a.id,
+        time: new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        patient: a.patientName,
+        type: a.reasonForVisit ?? "Consultation",
+        status: a.status.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      })),
+    [overview],
+  )
+
+  const priorityReports = useMemo(
+    () =>
+      (overview?.labReports ?? []).map((r) => ({
+        id: r.id,
+        patient: r.patientName,
+        test: r.title,
+        status: r.status.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      })),
+    [overview],
+  )
+  const handleSearchPatient = async () => {
+    if (patientSearch.trim().length < 2) {
+      setFoundPatients([])
+      return
+    }
+    try {
+      const data = await api.get<{ patients: Array<{ id: string; name: string }> }>(
+        `/doctor/patients/search?q=${encodeURIComponent(patientSearch.trim())}`,
+      )
+      setFoundPatients(data.patients)
+    } catch {
+      setFoundPatients([])
+    }
+  }
+  const handleBookPatient = async () => {
+    if (!bookingName || !bookingTime) return
+    try {
+      const matches = await api.get<{ patients: Array<{ id: string }> }>(
+        `/doctor/patients/search?q=${encodeURIComponent(bookingName.trim())}`,
+      )
+      const patientId = matches.patients[0]?.id
+      if (!patientId) return
+      const startTime = new Date()
+      const [hours, minutes] = bookingTime.split(":").map(Number)
+      startTime.setHours(hours, minutes, 0, 0)
+      const endTime = new Date(startTime.getTime() + 30 * 60 * 1000)
+      await api.post("/doctor/appointments", {
+        patientId,
+        date: startTime.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        reasonForVisit: "consultation",
+      })
+    } catch {
+      // Keep dialog interaction unchanged if booking fails.
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex items-center justify-between space-y-2 px-4 lg:px-6">
@@ -106,11 +158,14 @@ export default function Overview() {
                   <Label htmlFor="search" className="text-right">
                     Query
                   </Label>
-                  <Input id="search" placeholder="e.g. Aarav Sharma" className="col-span-3" />
+                  <Input id="search" placeholder="e.g. Aarav Sharma" className="col-span-3" value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)} />
                 </div>
+                {foundPatients.slice(0, 3).map((patient) => (
+                  <p key={patient.id} className="text-sm text-muted-foreground text-right">{patient.name}</p>
+                ))}
               </div>
               <DialogFooter>
-                <Button type="submit">Search</Button>
+                <Button type="submit" onClick={handleSearchPatient}>Search</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -135,17 +190,17 @@ export default function Overview() {
                   <Label htmlFor="patient-name" className="text-right">
                     Name
                   </Label>
-                  <Input id="patient-name" placeholder="Name" className="col-span-3" />
+                  <Input id="patient-name" placeholder="Name" className="col-span-3" value={bookingName} onChange={(e) => setBookingName(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="time-slot" className="text-right">
                     Time
                   </Label>
-                  <Input id="time-slot" type="time" className="col-span-3" />
+                  <Input id="time-slot" type="time" className="col-span-3" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">Confirm Booking</Button>
+                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" onClick={handleBookPatient}>Confirm Booking</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -162,7 +217,7 @@ export default function Overview() {
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-indigo-900 dark:text-indigo-200">Good morning, Dr. Jenkins</CardTitle>
               <CardDescription className="text-indigo-700/70 dark:text-indigo-300">
-                You have a busy shift ahead. 18 patients scheduled, and 7 lab reports need your attention.
+                You have a busy shift ahead. {overview?.metrics.appointmentsToday ?? 0} patients scheduled, and {overview?.metrics.pendingReports ?? 0} lab reports need your attention.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -170,7 +225,7 @@ export default function Overview() {
           {/* Schedule Table */}
           <Card className="flex-1">
             <CardHeader>
-              <CardTitle>Today's Schedule</CardTitle>
+              <CardTitle>Today&apos;s Schedule</CardTitle>
               <CardDescription>Upcoming patient slots for this shift.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -218,7 +273,7 @@ export default function Overview() {
             <Card>
               <CardHeader className="p-4 pb-2">
                 <CardDescription className="text-xs">Appointments</CardDescription>
-                <CardTitle className="text-2xl tabular-nums">18</CardTitle>
+                <CardTitle className="text-2xl tabular-nums">{overview?.metrics.appointmentsToday ?? 0}</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <Badge variant="outline" className="text-indigo-600 bg-indigo-50 border-indigo-200 mt-1 dark:bg-indigo-950/50 dark:text-indigo-400">
@@ -229,7 +284,7 @@ export default function Overview() {
             <Card>
               <CardHeader className="p-4 pb-2">
                 <CardDescription className="text-xs">Consultations</CardDescription>
-                <CardTitle className="text-2xl tabular-nums">11</CardTitle>
+                <CardTitle className="text-2xl tabular-nums">{overview?.metrics.consultationsClosed ?? 0}</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200 mt-1 dark:bg-emerald-950/50 dark:text-emerald-400">
@@ -297,7 +352,7 @@ export default function Overview() {
                 <IconStethoscope className="h-5 w-5" />
                 <CardTitle className="text-base">Clinical Notes</CardTitle>
               </div>
-              <CardDescription>3 encounters missing final notes.</CardDescription>
+              <CardDescription>{overview?.metrics.unsignedCharts ?? 0} encounters missing final notes.</CardDescription>
             </CardHeader>
             <CardContent>
               {/* Note Dialog */}

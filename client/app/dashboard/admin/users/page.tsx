@@ -1,5 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
-import React from 'react'
+"use client"
+
+import React, { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -16,54 +18,6 @@ import { IconDotsVertical, IconFilter, IconPlus, IconSearch } from "@tabler/icon
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-const users = [
-  {
-    id: "1",
-    name: "Dr. Sarah Jenkins",
-    email: "sarah.jenkins@hospital.org",
-    role: "Doctor",
-    department: "Cardiology",
-    status: "Active",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-  },
-  {
-    id: "2",
-    name: "James Wilson",
-    email: "j.wilson@hospital.org",
-    role: "Admin",
-    department: "IT",
-    status: "Active",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-  },
-  {
-    id: "3",
-    name: "Emily Chen",
-    email: "e.chen@hospital.org",
-    role: "Nurse",
-    department: "Pediatrics",
-    status: "Offline",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d",
-  },
-  {
-    id: "4",
-    name: "Michael Chang",
-    email: "m.chang@hospital.org",
-    role: "Pharmacist",
-    department: "Pharmacy",
-    status: "On Leave",
-    avatar: "https://i.pravatar.cc/150?u=a048581f4e29026701d",
-  },
-  {
-    id: "5",
-    name: "Dr. Robert Fox",
-    email: "robert.fox@hospital.org",
-    role: "Doctor",
-    department: "Neurology",
-    status: "Active",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026703d",
-  },
-]
-
 import {
   Dialog,
   DialogContent,
@@ -75,8 +29,43 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { api } from "@/lib/http"
+
+type AdminUsersResponse = {
+  users: Array<{ id: string; email: string; role: string; firstName: string; lastName: string }>
+}
 
 export default function Users() {
+  const [users, setUsers] = useState<AdminUsersResponse["users"]>([])
+  const [search, setSearch] = useState("")
+  const [changingId, setChangingId] = useState<string | null>(null)
+
+  const loadUsers = async () => {
+    try {
+      const data = await api.get<AdminUsersResponse>("/admin/users")
+      setUsers(data.users)
+    } catch {
+      setUsers([])
+    }
+  }
+  useEffect(() => {
+    void loadUsers()
+  }, [])
+  const filteredUsers = users.filter((user) =>
+    `${user.firstName} ${user.lastName} ${user.email} ${user.role}`.toLowerCase().includes(search.toLowerCase()),
+  )
+  const handleRoleChange = async (id: string, role: string) => {
+    try {
+      setChangingId(id)
+      await api.patch(`/admin/users/${id}/role`, { role })
+      await loadUsers()
+    } catch {
+      // Keep table unchanged on failure.
+    } finally {
+      setChangingId(null)
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -160,7 +149,7 @@ export default function Users() {
           <div className="flex space-x-2">
             <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search users..." className="pl-8 w-[250px]" />
+              <Input placeholder="Search users..." className="pl-8 w-[250px]" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <Button variant="outline" size="icon">
               <IconFilter className="h-4 w-4" />
@@ -179,33 +168,47 @@ export default function Users() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="flex items-center space-x-3">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(`${user.firstName} ${user.lastName}`)}`} alt={user.email} />
+                      <AvatarFallback>{user.firstName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="font-medium">{user.name}</span>
+                      <span className="font-medium">{`${user.firstName} ${user.lastName}`}</span>
                       <span className="text-xs text-muted-foreground">{user.email}</span>
                     </div>
                   </TableCell>
                   <TableCell>{user.role}</TableCell>
-                  <TableCell>{user.department}</TableCell>
+                  <TableCell>-</TableCell>
                   <TableCell>
                     <Badge 
-                      variant={user.status === 'Active' ? 'default' : user.status === 'Offline' ? 'secondary' : 'outline'}
-                      className={user.status === 'Active' ? 'bg-green-500/15 text-green-700 hover:bg-green-500/25 border-green-200 dark:text-green-400 dark:border-green-900' : ''}
+                      variant="default"
+                      className="bg-green-500/15 text-green-700 hover:bg-green-500/25 border-green-200 dark:text-green-400 dark:border-green-900"
                     >
-                      {user.status}
+                      Active
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <IconDotsVertical className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Select defaultValue={user.role} onValueChange={(value) => void handleRoleChange(user.id, value)}>
+                        <SelectTrigger className="h-8 w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ADMIN">Admin</SelectItem>
+                          <SelectItem value="DOCTOR">Doctor</SelectItem>
+                          <SelectItem value="PATIENT">Patient</SelectItem>
+                          <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+                          <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="icon" disabled={changingId === user.id}>
+                        <IconDotsVertical className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

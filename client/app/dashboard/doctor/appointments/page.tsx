@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,51 +24,86 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconCalendarEvent, IconFilter, IconPlus, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const appointments = [
-  {
-    id: "APT-1042",
-    patient: "Sana Iqbal",
-    time: "09:30 AM",
-    visitType: "Follow Up",
-    department: "Cardiology",
-    status: "Checked In",
-  },
-  {
-    id: "APT-1048",
-    patient: "Aarav Sharma",
-    time: "10:15 AM",
-    visitType: "Consultation",
-    department: "General Medicine",
-    status: "In Progress",
-  },
-  {
-    id: "APT-1050",
-    patient: "Kabir Khan",
-    time: "11:00 AM",
-    visitType: "New Patient",
-    department: "General Medicine",
-    status: "Scheduled",
-  },
-  {
-    id: "APT-1056",
-    patient: "Neha Verma",
-    time: "12:30 PM",
-    visitType: "Lab Review",
-    department: "Endocrinology",
-    status: "Scheduled",
-  },
-  {
-    id: "APT-1062",
-    patient: "Ishaan Reddy",
-    time: "02:15 PM",
-    visitType: "Follow Up",
-    department: "Cardiology",
-    status: "Rescheduled",
-  },
-]
+type DoctorAppointmentsResponse = {
+  appointments: Array<{
+    id: string
+    startTime: string
+    reasonForVisit: string | null
+    status: string
+    patient: { name: string }
+  }>
+}
 
 export default function Appointments() {
+  const [appointments, setAppointments] = useState<DoctorAppointmentsResponse["appointments"]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [patientName, setPatientName] = useState("")
+  const [visitType, setVisitType] = useState("consultation")
+  const [date, setDate] = useState("")
+  const [time, setTime] = useState("")
+
+  useEffect(() => {
+    void loadAppointments()
+  }, [])
+
+  async function loadAppointments() {
+    try {
+      const data = await api.get<DoctorAppointmentsResponse>("/doctor/appointments")
+      setAppointments(data.appointments)
+    } catch {
+      setAppointments([])
+    }
+  }
+
+  const handleCreateAppointment = async () => {
+    if (!patientName || !date || !time) return
+    try {
+      const search = await api.get<{ patients: Array<{ id: string }> }>(
+        `/doctor/patients/search?q=${encodeURIComponent(patientName)}`,
+      )
+      const patientId = search.patients[0]?.id
+      if (!patientId) return
+      const startTime = new Date(`${date}T${time}:00`)
+      const endTime = new Date(startTime.getTime() + 30 * 60 * 1000)
+      await api.post("/doctor/appointments", {
+        patientId,
+        date: startTime.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        reasonForVisit: visitType,
+      })
+      await loadAppointments()
+    } catch {
+      // keep UI unchanged; silent failure
+    }
+  }
+
+  const mapped = useMemo(
+    () =>
+      appointments.map((appointment) => ({
+        id: appointment.id,
+        patient: appointment.patient.name,
+        time: new Date(appointment.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        visitType: appointment.reasonForVisit ?? "Consultation",
+        department: "-",
+        status: appointment.status
+          .toLowerCase()
+          .replaceAll("_", " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+      })),
+    [appointments],
+  )
+  const filtered = useMemo(
+    () =>
+      mapped.filter((appointment) =>
+        `${appointment.patient} ${appointment.visitType}`.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [mapped, searchQuery],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -93,12 +130,12 @@ export default function Appointments() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="patient-name">Patient Name</Label>
-                <Input id="patient-name" placeholder="Enter patient full name" />
+                <Input id="patient-name" placeholder="Enter patient full name" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="visit-type">Visit Type</Label>
-                  <Select>
+                  <Select value={visitType} onValueChange={setVisitType}>
                     <SelectTrigger id="visit-type">
                       <SelectValue placeholder="Select visit type" />
                     </SelectTrigger>
@@ -128,16 +165,16 @@ export default function Appointments() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="date">Date</Label>
-                  <Input id="date" type="date" />
+                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="time">Time</Label>
-                  <Input id="time" type="time" />
+                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">
+              <Button type="submit" onClick={handleCreateAppointment}>
                 <IconCalendarEvent className="mr-2 h-4 w-4" />
                 Save Appointment
               </Button>
@@ -157,7 +194,12 @@ export default function Appointments() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search patient..." className="w-[230px] pl-8" />
+              <Input
+                placeholder="Search patient..."
+                className="w-[230px] pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             <Button variant="outline" size="icon">
               <IconFilter className="h-4 w-4" />
@@ -177,7 +219,7 @@ export default function Appointments() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {appointments.map((appointment) => (
+              {filtered.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-mono text-xs">{appointment.id}</TableCell>
                   <TableCell className="font-medium">{appointment.patient}</TableCell>

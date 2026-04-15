@@ -1,5 +1,8 @@
 import Overview from "./overview/page"
 
-export default function ReceptionPage() {
-  return <Overview />
+const Reception = () => {
+  return (
+    <Overview />
+  )
 }
+export default Reception

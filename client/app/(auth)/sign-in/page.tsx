@@ -13,10 +13,12 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { api } from "@/lib/http"
-// import { Spinner } from "@/components/ui/spinner" // assuming spinner wasn't actively implemented in this exact layout if not requested.
+import { useAuth } from "@/lib/auth-context"
+import { getDefaultDashboardPath } from "@/lib/auth-routes"
 
 export default function SignIn() {
   const router = useRouter();
+  const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,17 +30,19 @@ export default function SignIn() {
     setError("");
 
     try {
-      const data = await api.post<{ token: string, user: { role: string } }>('/auth/login', {
+      const data = await api.post<{
+        token: string
+        user: { role: string }
+      }>("/auth/login", {
         email,
-        password
+        password,
       });
-      
-      // Store credentials locally
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Route intelligently based on role
-      router.push(`/dashboard/${data.user.role.toLowerCase()}/overview`); 
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      await refreshSession();
+      router.push(getDefaultDashboardPath(data.user.role));
     } catch (err: any) {
       setError(err.message);
     } finally {

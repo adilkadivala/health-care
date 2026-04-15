@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,47 +24,57 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconDownload, IconSearch } from "@tabler/icons-react"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "@/lib/http"
 
-const reports = [
-  {
-    id: "LR-8812",
-    patient: "Nikhil Joshi",
-    orderedOn: "2026-04-11 08:40",
-    test: "CBC + ESR",
-    result: "Mild inflammation markers",
-    priority: "Routine",
-    status: "Pending Review",
-  },
-  {
-    id: "LR-8815",
-    patient: "Sana Iqbal",
-    orderedOn: "2026-04-11 09:00",
-    test: "Liver Function Panel",
-    result: "ALT elevated",
-    priority: "High",
-    status: "Reviewed",
-  },
-  {
-    id: "LR-8819",
-    patient: "Rohan Kulkarni",
-    orderedOn: "2026-04-10 18:05",
-    test: "Thyroid Profile",
-    result: "TSH below range",
-    priority: "Critical",
-    status: "Escalated",
-  },
-  {
-    id: "LR-8822",
-    patient: "Neha Verma",
-    orderedOn: "2026-04-10 17:30",
-    test: "HbA1c",
-    result: "8.6%",
-    priority: "High",
-    status: "Pending Review",
-  },
-]
+type DoctorReportsResponse = {
+  labReports: Array<{
+    id: string
+    patientName: string
+    orderedOn: string
+    title: string
+    summary: string | null
+    status: string
+  }>
+}
 
 export default function LabReports() {
+  const [reports, setReports] = useState<DoctorReportsResponse["labReports"]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await api.get<DoctorReportsResponse>("/doctor/lab-reports")
+        setReports(data.labReports)
+      } catch {
+        setReports([])
+      }
+    }
+    void load()
+  }, [])
+
+  const mapped = useMemo(
+    () =>
+      reports.map((report) => ({
+        ...report,
+        patient: report.patientName,
+        test: report.title,
+        result: report.summary ?? "-",
+        orderedOn: new Date(report.orderedOn).toLocaleString(),
+        priority:
+          report.status === "CRITICAL"
+            ? "Critical"
+            : report.status === "PENDING_REVIEW"
+              ? "High"
+              : "Routine",
+        status: report.status
+          .toLowerCase()
+          .replaceAll("_", " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+      })),
+    [reports],
+  )
+
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
@@ -149,7 +161,7 @@ export default function LabReports() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reports.map((report) => (
+              {mapped.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell className="font-mono text-xs">{report.id}</TableCell>
                   <TableCell className="font-medium">{report.patient}</TableCell>

@@ -30,9 +30,18 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 };
 
+/** ADMIN may call any role-scoped route; other users must match `roles`. */
 export const authorizeRole = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+    if (req.user.role === 'ADMIN') {
+      next();
+      return;
+    }
+    if (!roles.includes(req.user.role)) {
       res.status(403).json({ message: `Forbidden: Requires one of the following roles: ${roles.join(', ')}` });
       return;
     }
