@@ -38,16 +38,16 @@ export default function Settings() {
       <div className="mt-6 flex flex-col gap-6 md:flex-row">
         <aside className="w-full shrink-0 md:w-64">
           <nav className="flex space-x-2 overflow-x-auto md:flex-col md:space-x-0 md:space-y-1">
-            <Button variant="secondary" className="justify-start">
+            <Button variant={activeTab === "general" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("general")}>
               General
             </Button>
-            <Button variant="ghost" className="justify-start">
+            <Button variant={activeTab === "notifications" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("notifications")}>
               Notifications
             </Button>
-            <Button variant="ghost" className="justify-start">
+            <Button variant={activeTab === "privacy" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("privacy")}>
               Privacy
             </Button>
-            <Button variant="ghost" className="justify-start">
+            <Button variant={activeTab === "security" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("security")}>
               Security
             </Button>
           </nav>

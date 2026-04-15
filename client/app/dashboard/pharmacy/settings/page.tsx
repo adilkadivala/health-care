@@ -41,16 +41,16 @@ export default function Settings() {
       <div className="mt-6 flex flex-col gap-6 md:flex-row">
         <aside className="w-full shrink-0 md:w-64">
           <nav className="flex space-x-2 overflow-x-auto md:flex-col md:space-x-0 md:space-y-1">
-            <Button variant="secondary" className="justify-start">
+            <Button variant={activeTab === "general" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("general")}>
               General
             </Button>
-            <Button variant="ghost" className="justify-start">
+            <Button variant={activeTab === "dispensing" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("dispensing")}>
               Dispensing
             </Button>
-            <Button variant="ghost" className="justify-start">
+            <Button variant={activeTab === "alerts" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("alerts")}>
               Alerts
             </Button>
-            <Button variant="ghost" className="justify-start">
+            <Button variant={activeTab === "security" ? "secondary" : "ghost"} className="justify-start" onClick={() => setActiveTab("security")}>
               Security
             </Button>
           </nav>
@@ -138,25 +138,31 @@ export default function Settings() {
             </CardFooter>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Theme Preference</CardTitle>
-              <CardDescription>Set visual preference for this dashboard session.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ToggleGroup type="single" defaultValue="system" className="justify-start">
-                <ToggleGroupItem value="light" aria-label="Light mode">
-                  Light
-                </ToggleGroupItem>
-                <ToggleGroupItem value="dark" aria-label="Dark mode">
-                  Dark
-                </ToggleGroupItem>
-                <ToggleGroupItem value="system" aria-label="System mode">
-                  System
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </CardContent>
-          </Card>
+          {activeTab === "security" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Security & Compliance</CardTitle>
+                <CardDescription>Audit controls for dispensing regulated substances.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Two-Factor Override for Controls</p>
+                    <p className="text-sm text-muted-foreground">Require manager PIN for Schedule II drugs.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Auto-lock Terminal</p>
+                    <p className="text-sm text-muted-foreground">Lock pharmacy sessions after 5 mins of inactivity.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

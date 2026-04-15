@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/sidebar"
 
 type DashboardKey = "admin" | "doctor" | "patient" | "pharmacy" | "reception"
+type DashboardKey = "admin" | "doctor" | "patient" | "pharmacy" | "reception"
 
 type SidebarLink = {
   title: string
@@ -62,20 +63,15 @@ const dashboardConfig: Record<DashboardKey, DashboardSidebarConfig> = {
     },
     navMain: [
       { title: "Overview", url: "/dashboard/admin", icon: IconDashboard },
+      { title: "Financial Report", url: "/dashboard/admin/financial-report", icon: IconFileText },
       { title: "Users", url: "/dashboard/admin/users", icon: IconUsers },
       { title: "Audit", url: "/dashboard/admin/audit", icon: IconCreditCard },
-      {
-        title: "Activity",
-        url: "/dashboard/admin/activity",
-        icon: IconActivity,
-      },
+      { title: "Activity", url: "/dashboard/admin/activity", icon: IconActivity },
     ],
     navSecondary: [
-      {
-        title: "Settings",
-        url: "/dashboard/admin/settings",
-        icon: IconSettings,
-      },
+      { title: "Hospital Profile", url: "/dashboard/admin/hospital-profile", icon: IconUser },
+      { title: "Config", url: "/dashboard/admin/config", icon: IconSettings },
+      { title: "Settings", url: "/dashboard/admin/settings", icon: IconSettings },
       { title: "Help", url: "/dashboard/admin/help", icon: IconHelp },
     ],
   },
@@ -89,29 +85,15 @@ const dashboardConfig: Record<DashboardKey, DashboardSidebarConfig> = {
     },
     navMain: [
       { title: "Overview", url: "/dashboard/doctor", icon: IconDashboard },
-      {
-        title: "Appointments",
-        url: "/dashboard/doctor/appointments",
-        icon: IconCalendarEvent,
-      },
-      {
-        title: "Lab Reports",
-        url: "/dashboard/doctor/lab-reports",
-        icon: IconFileText,
-      },
+      { title: "Appointments", url: "/dashboard/doctor/appointments", icon: IconCalendarEvent },
+      { title: "Lab Reports", url: "/dashboard/doctor/lab-reports", icon: IconFileText },
+      { title: "Billing", url: "/dashboard/doctor/billing", icon: IconCreditCard },
       { title: "Profile", url: "/dashboard/doctor/profile", icon: IconUser },
-      {
-        title: "Activity",
-        url: "/dashboard/doctor/activity",
-        icon: IconActivity,
-      },
+      { title: "Activity", url: "/dashboard/doctor/activity", icon: IconActivity },
     ],
     navSecondary: [
-      {
-        title: "Settings",
-        url: "/dashboard/doctor/settings",
-        icon: IconSettings,
-      },
+      { title: "Authorize Signature", url: "/dashboard/doctor/authorize-signature", icon: IconFileText },
+      { title: "Settings", url: "/dashboard/doctor/settings", icon: IconSettings },
       { title: "Help", url: "/dashboard/doctor/help", icon: IconHelp },
     ],
   },
