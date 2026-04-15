@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,20 +13,7 @@ import { useEffect } from "react"
 import { api } from "@/lib/http"
 
 export default function Settings() {
-  useEffect(() => {
-    void api.get("/pharmacy/settings").catch(() => undefined)
-  }, [])
-
-  const handlePatchSettings = async () => {
-    const signature = (document.getElementById("signature") as HTMLInputElement | null)?.value ?? ""
-    try {
-      await api.patch("/pharmacy/settings", {
-        settings: { signature },
-      })
-    } catch {
-      // keep UI unchanged; silent failure
-    }
-  }
+  const [activeTab, setActiveTab] = useState("general")
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -57,86 +45,136 @@ export default function Settings() {
         </aside>
 
         <div className="flex-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dispensing Defaults</CardTitle>
-              <CardDescription>
-                Set standard behavior for queue processing and label generation.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="queue-sort">Queue Sort Order</Label>
-                  <Select defaultValue="priority">
-                    <SelectTrigger id="queue-sort">
-                      <SelectValue placeholder="Select sorting" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="priority">Priority First</SelectItem>
-                      <SelectItem value="time">Oldest First</SelectItem>
-                      <SelectItem value="patient">Patient Name</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="label-format">Label Format</Label>
-                  <Select defaultValue="standard">
-                    <SelectTrigger id="label-format">
-                      <SelectValue placeholder="Select format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="compact">Compact</SelectItem>
-                      <SelectItem value="barcode">Barcode Focused</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="signature">Shift Signature</Label>
-                <Input id="signature" defaultValue="Pharm. James Wilson | Evening Shift" />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handlePatchSettings}>Save Dispensing Defaults</Button>
-            </CardFooter>
-          </Card>
+          {activeTab === "general" && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pharmacy Information</CardTitle>
+                  <CardDescription>
+                    Update the core details assigned to this branch.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="branch">Branch Name</Label>
+                    <Input id="branch" defaultValue="Main Floor Pharmacy" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="contact">Internal Extension</Label>
+                    <Input id="contact" defaultValue="Ext 4099" />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button>Save Details</Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Alert Preferences</CardTitle>
-              <CardDescription>Choose which critical events should notify your team.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Low stock alerts</p>
-                  <p className="text-sm text-muted-foreground">Notify when stock drops below reorder levels.</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Theme Preference</CardTitle>
+                  <CardDescription>Set visual preference for this dashboard session.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ToggleGroup type="single" defaultValue="system" className="justify-start">
+                    <ToggleGroupItem value="light" aria-label="Light mode">
+                      Light
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="dark" aria-label="Dark mode">
+                      Dark
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="system" aria-label="System mode">
+                      System
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {activeTab === "dispensing" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Dispensing Defaults</CardTitle>
+                <CardDescription>
+                  Set standard behavior for queue processing and label generation.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="queue-sort">Queue Sort Order</Label>
+                    <Select defaultValue="priority">
+                      <SelectTrigger id="queue-sort">
+                        <SelectValue placeholder="Select sorting" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="priority">Priority First</SelectItem>
+                        <SelectItem value="time">Oldest First</SelectItem>
+                        <SelectItem value="patient">Patient Name</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="label-format">Label Format</Label>
+                    <Select defaultValue="standard">
+                      <SelectTrigger id="label-format">
+                        <SelectValue placeholder="Select format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="compact">Compact</SelectItem>
+                        <SelectItem value="barcode">Barcode Focused</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Near expiry batches</p>
-                  <p className="text-sm text-muted-foreground">Warn 30 days before medicine expiry.</p>
+                <div className="grid gap-2">
+                  <Label htmlFor="signature">Shift Signature</Label>
+                  <Input id="signature" defaultValue="Pharm. James Wilson | Evening Shift" />
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Urgent prescription queue</p>
-                  <p className="text-sm text-muted-foreground">Immediate alerts for urgent doctor orders.</p>
+              </CardContent>
+              <CardFooter>
+                <Button>Save Dispensing Defaults</Button>
+              </CardFooter>
+            </Card>
+          )}
+
+          {activeTab === "alerts" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Alert Preferences</CardTitle>
+                <CardDescription>Choose which critical events should notify your team.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Low stock alerts</p>
+                    <p className="text-sm text-muted-foreground">Notify when stock drops below reorder levels.</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" onClick={handlePatchSettings}>Update Alert Settings</Button>
-            </CardFooter>
-          </Card>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Near expiry batches</p>
+                    <p className="text-sm text-muted-foreground">Warn 30 days before medicine expiry.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Urgent prescription queue</p>
+                    <p className="text-sm text-muted-foreground">Immediate alerts for urgent doctor orders.</p>
+                  </div>
+                  <Switch />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline">Update Alert Settings</Button>
+              </CardFooter>
+            </Card>
+          )}
 
           {activeTab === "security" && (
             <Card>

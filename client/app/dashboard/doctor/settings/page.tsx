@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,18 +13,7 @@ import { useEffect } from "react"
 import { api } from "@/lib/http"
 
 export default function Settings() {
-  useEffect(() => {
-    void api.get("/doctor/me").catch(() => undefined)
-  }, [])
-
-  const handleSaveSettings = async () => {
-    const signature = (document.getElementById("signature") as HTMLInputElement | null)?.value ?? ""
-    try {
-      await api.patch("/doctor/me", { preferences: { signature } })
-    } catch {
-      // keep UI unchanged; silent failure
-    }
-  }
+  const [activeTab, setActiveTab] = useState("general")
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -95,55 +85,108 @@ export default function Settings() {
                     </div>
                   </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signature">Default Signature</Label>
-                <Input
-                  id="signature"
-                  defaultValue="Dr. Sarah Jenkins, MD | Consultant Cardiologist"
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveSettings}>Save Changes</Button>
-            </CardFooter>
-          </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="signature">Default Signature</Label>
+                    <Input
+                      id="signature"
+                      defaultValue="Dr. Sarah Jenkins, MD | Consultant Cardiologist"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button>Save Changes</Button>
+                </CardFooter>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Choose how you receive updates from lab, schedule, and patient messaging.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Lab report alerts</p>
-                  <p className="text-sm text-muted-foreground">Notify when high priority reports are ready.</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Theme Preference</CardTitle>
+                  <CardDescription>Set the display mode for this dashboard session.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ToggleGroup type="single" defaultValue="system" className="justify-start">
+                    <ToggleGroupItem value="light" aria-label="Light mode">
+                      Light
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="dark" aria-label="Dark mode">
+                      Dark
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="system" aria-label="System mode">
+                      System
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {activeTab === "availability" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Working Hours</CardTitle>
+                <CardDescription>Manage your standard availability for appointments.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Accept Virtual Appointments</Label>
+                    <p className="text-sm text-muted-foreground">Allow patients to book telehealth sessions.</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Appointment reminders</p>
-                  <p className="text-sm text-muted-foreground">Show alerts 15 minutes before each slot.</p>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Auto-accept Appointments</Label>
+                    <p className="text-sm text-muted-foreground">Automatically confirm patient bookings in available slots.</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Patient messages</p>
-                  <p className="text-sm text-muted-foreground">Notify on every new secure conversation.</p>
+              </CardContent>
+              <CardFooter>
+                <Button>Update Availability</Button>
+              </CardFooter>
+            </Card>
+          )}
+
+          {activeTab === "notifications" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>
+                  Choose how you receive updates from lab, schedule, and patient messaging.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Lab report alerts</p>
+                    <p className="text-sm text-muted-foreground">Notify when high priority reports are ready.</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" onClick={handleSaveSettings}>Update Notifications</Button>
-            </CardFooter>
-          </Card>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Appointment reminders</p>
+                    <p className="text-sm text-muted-foreground">Show alerts 15 minutes before each slot.</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Patient messages</p>
+                    <p className="text-sm text-muted-foreground">Notify on every new secure conversation.</p>
+                  </div>
+                  <Switch />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline">Update Notifications</Button>
+              </CardFooter>
+            </Card>
+          )}
 
           {activeTab === "privacy" && (
             <Card>
