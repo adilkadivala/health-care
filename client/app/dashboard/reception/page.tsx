@@ -5,5 +5,4 @@ const Reception = () => {
     <Overview />
   )
 }
-
 export default Reception

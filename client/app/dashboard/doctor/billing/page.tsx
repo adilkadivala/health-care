@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 
-export default function DoctorBillingPage() {
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6 py-6 pt-0">
       <div className="flex items-center justify-between border-b pb-4">

@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 85b9f2b9130dea36db0778433a0250ffc940dcc4
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -7,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+<<<<<<< HEAD
 =======
 /* eslint-disable react/no-unescaped-entities */
 import React from 'react'
@@ -16,6 +20,8 @@ import { Button } from "@/components/ui/button"
 import { IconBook, IconLifebuoy, IconMessageCircle, IconPhoneCall, IconSearch } from "@tabler/icons-react"
 
 >>>>>>> 840abc40f09212a414d550d90fe5e854e638aa89
+=======
+>>>>>>> 85b9f2b9130dea36db0778433a0250ffc940dcc4
 import {
   Dialog,
   DialogContent,
@@ -26,6 +32,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 85b9f2b9130dea36db0778433a0250ffc940dcc4
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -112,6 +121,7 @@ export default function Help() {
       </div>
     </div>
   )
+<<<<<<< HEAD
 }
 =======
 import { Label } from "@/components/ui/label"
@@ -266,3 +276,6 @@ export default function ReceptionHelp() {
   )
 }
 >>>>>>> 840abc40f09212a414d550d90fe5e854e638aa89
+=======
+}
+>>>>>>> 85b9f2b9130dea36db0778433a0250ffc940dcc4

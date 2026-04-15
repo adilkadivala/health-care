@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 85b9f2b9130dea36db0778433a0250ffc940dcc4
 "use client"
 
 import { Badge } from "@/components/ui/badge"
@@ -126,6 +129,7 @@ export default function Appointments() {
       </Card>
     </div>
   )
+<<<<<<< HEAD
 }
 =======
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -252,3 +256,6 @@ export default function AppointmentsPage() {
   )
 }
 >>>>>>> 840abc40f09212a414d550d90fe5e854e638aa89
+=======
+}
+>>>>>>> 85b9f2b9130dea36db0778433a0250ffc940dcc4
