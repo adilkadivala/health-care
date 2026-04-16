@@ -31,13 +31,13 @@ export default function RootLayout({
         </div>
       </div>
       <div className="relative hidden h-full w-full items-center justify-center overflow-hidden bg-linear-to-tl from-accent to-accent-foreground/10 lg:flex">
-        <div className="absolute top-15 left-15 h-full w-full">
+        <div >
           <Image
-            width={1000}
-            height={1000}
             src="/patient.png"
             alt="dashboard-img"
-          />
+            fill
+            className="absolute object-contain scale-150 blur-sm hover:blur-none transition-all duration-300 left-20 top-20"
+          />  
         </div>
       </div>
     </div>

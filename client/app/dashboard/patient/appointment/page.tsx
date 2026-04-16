@@ -2,7 +2,13 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +20,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -38,12 +50,16 @@ type PatientAppointmentsResponse = {
 }
 
 export default function Appointment() {
-  const [appointments, setAppointments] = useState<PatientAppointmentsResponse["appointments"]>([])
+  const [appointments, setAppointments] = useState<
+    PatientAppointmentsResponse["appointments"]
+  >([])
   const [department, setDepartment] = useState("general")
   const [doctorName, setDoctorName] = useState("")
   const [date, setDate] = useState("")
   const [time, setTime] = useState("")
-  const [doctors, setDoctors] = useState<Array<{ id: string; name: string; department: string }>>([])
+  const [doctors, setDoctors] = useState<
+    Array<{ id: string; name: string; department: string }>
+  >([])
 
   useEffect(() => {
     void loadAppointments()
@@ -52,7 +68,9 @@ export default function Appointment() {
 
   async function loadAppointments() {
     try {
-      const data = await api.get<PatientAppointmentsResponse>("/patient/appointments")
+      const data = await api.get<PatientAppointmentsResponse>(
+        "/patient/appointments"
+      )
       setAppointments(data.appointments)
     } catch {
       setAppointments([])
@@ -61,7 +79,9 @@ export default function Appointment() {
 
   async function loadDoctors() {
     try {
-      const data = await api.get<{ doctors: Array<{ id: string; name: string; department: string }> }>("/patient/doctors")
+      const data = await api.get<{
+        doctors: Array<{ id: string; name: string; department: string }>
+      }>("/patient/doctors")
       setDoctors(data.doctors)
     } catch {
       setDoctors([])
@@ -95,7 +115,10 @@ export default function Appointment() {
         return {
           id: appointment.id,
           date: dt.toLocaleDateString(),
-          time: dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          time: dt.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
           doctor: appointment.doctorName,
           department: appointment.department,
           status: appointment.status
@@ -104,7 +127,7 @@ export default function Appointment() {
             .replace(/\b\w/g, (c) => c.toUpperCase()),
         }
       }),
-    [appointments],
+    [appointments]
   )
 
   return (
@@ -153,9 +176,17 @@ export default function Appointment() {
                   </SelectTrigger>
                   <SelectContent>
                     {doctors
-                      .filter((doctor) => (department === "general" ? true : doctor.department.toLowerCase().includes(department.toLowerCase())))
+                      .filter((doctor) =>
+                        department === "general"
+                          ? true
+                          : doctor.department
+                              .toLowerCase()
+                              .includes(department.toLowerCase())
+                      )
                       .map((doctor) => (
-                        <SelectItem key={doctor.id} value={doctor.id}>{doctor.name}</SelectItem>
+                        <SelectItem key={doctor.id} value={doctor.id}>
+                          {doctor.name}
+                        </SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
@@ -163,16 +194,28 @@ export default function Appointment() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="appointment-date">Date</Label>
-                  <Input id="appointment-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <Input
+                    id="appointment-date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="appointment-time">Time</Label>
-                  <Input id="appointment-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+                  <Input
+                    id="appointment-time"
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" onClick={handleBookAppointment}>Confirm Booking</Button>
+              <Button type="submit" onClick={handleBookAppointment}>
+                Confirm Booking
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -182,12 +225,17 @@ export default function Appointment() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
             <CardTitle>Appointment Timeline</CardTitle>
-            <CardDescription>All upcoming and recent appointments in your account.</CardDescription>
+            <CardDescription>
+              All upcoming and recent appointments in your account.
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search doctor or department..." className="w-[250px] pl-8" />
+              <IconSearch className="absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search doctor or department..."
+                className="w-[250px] pl-8"
+              />
             </div>
             <Button variant="outline" size="icon">
               <IconFilter className="h-4 w-4" />
@@ -209,8 +257,12 @@ export default function Appointment() {
             <TableBody>
               {mapped.map((appointment) => (
                 <TableRow key={appointment.id}>
-                  <TableCell className="font-mono text-xs">{appointment.id}</TableCell>
-                  <TableCell className="font-medium">{appointment.date}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {appointment.id}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {appointment.date}
+                  </TableCell>
                   <TableCell>{appointment.time}</TableCell>
                   <TableCell>{appointment.doctor}</TableCell>
                   <TableCell>{appointment.department}</TableCell>
@@ -225,11 +277,11 @@ export default function Appointment() {
                       }
                       className={
                         appointment.status === "Confirmed"
-                          ? "bg-green-500/15 text-green-700 border-green-200 hover:bg-green-500/20 dark:text-green-400 dark:border-green-900"
+                          ? "border-green-200 bg-green-500/15 text-green-700 hover:bg-green-500/20 dark:border-green-900 dark:text-green-400"
                           : appointment.status === "Pending"
-                            ? "bg-orange-500/15 text-orange-700 border-orange-200 hover:bg-orange-500/20 dark:text-orange-400 dark:border-orange-900"
+                            ? "border-orange-200 bg-orange-500/15 text-orange-700 hover:bg-orange-500/20 dark:border-orange-900 dark:text-orange-400"
                             : appointment.status === "Completed"
-                              ? "bg-blue-500/15 text-blue-700 border-blue-200 hover:bg-blue-500/20 dark:text-blue-400 dark:border-blue-900"
+                              ? "border-blue-200 bg-blue-500/15 text-blue-700 hover:bg-blue-500/20 dark:border-blue-900 dark:text-blue-400"
                               : ""
                       }
                     >
