@@ -10,13 +10,14 @@ RUN bun install --frozen-lockfile
 COPY prisma/ ./prisma/
 COPY prisma.config.ts tsconfig.json ./
 COPY src ./src
+COPY docker-build-prisma.sh /usr/local/bin/docker-build-prisma.sh
 
-# prisma.config.ts requires DATABASE_URL to load; generate does not connect to the DB
-ENV DATABASE_URL=${DATABASE_URL}
-RUN bunx prisma generate
+# prisma.config.ts requires DATABASE_URL to load during generate.
+ARG DATABASE_URL
+RUN chmod +x /usr/local/bin/docker-build-prisma.sh \
+  && /usr/local/bin/docker-build-prisma.sh
 
 ENV NODE_ENV=production
-ENV PORT=8000
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
@@ -24,4 +25,4 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["bun", "run", "src/index.ts"]
+CMD ["bun", "run", "start"]
