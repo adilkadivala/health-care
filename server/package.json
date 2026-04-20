@@ -6,8 +6,8 @@
   "scripts": {
     "vercel-build": "npx prisma generate",
     "build": "tsc -b",
-    "start": "bun run ./dist/index.js",
-    "dev": "bun run build && bun run ./src/index.ts",
+    "start": "bun run ./src/server.ts",
+    "dev": "bun --watch ./src/server.ts",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
     "db:seed": "bun run prisma/seed.ts",
