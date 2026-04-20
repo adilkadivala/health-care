@@ -8,6 +8,8 @@ export class AdminNotFoundError extends Error {
   }
 }
 
+export type AccountStatus = "ACTIVE" | "DEACTIVATED" | "BLOCKED";
+
 async function requireAdmin(userId: string) {
   const admin = await prisma.admin.findUnique({
     where: { userId },
@@ -21,6 +23,41 @@ async function requireAdmin(userId: string) {
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function normalizeStatus(value: unknown): AccountStatus {
+  if (value === "BLOCKED" || value === "DEACTIVATED" || value === "ACTIVE") {
+    return value;
+  }
+  return "ACTIVE";
+}
+
+function getUserStatusMap(preferences: unknown): Record<string, AccountStatus> {
+  const pref = asObject(preferences);
+  const raw = asObject(pref.userStatusMap);
+  const map: Record<string, AccountStatus> = {};
+  for (const [id, status] of Object.entries(raw)) {
+    map[id] = normalizeStatus(status);
+  }
+  return map;
+}
+
+async function setUserStatusInPreferences(adminId: string, targetUserId: string, status: AccountStatus) {
+  const admin = await prisma.admin.findUnique({
+    where: { id: adminId },
+    select: { preferences: true },
+  });
+  const pref = asObject(admin?.preferences);
+  const currentMap = getUserStatusMap(admin?.preferences);
+  currentMap[targetUserId] = status;
+  const next = {
+    ...pref,
+    userStatusMap: currentMap,
+  };
+  await prisma.admin.update({
+    where: { id: adminId },
+    data: { preferences: next as Prisma.InputJsonValue },
+  });
 }
 
 export async function getMe(userId: string) {
@@ -119,13 +156,18 @@ export async function getOverviewTrends(userId: string, rangeDays: number) {
 }
 
 export async function listUsers(userId: string) {
-  await requireAdmin(userId);
+  const admin = await requireAdmin(userId);
+  const statusMap = getUserStatusMap(admin.preferences);
   const rows = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     take: 200,
     select: { id: true, email: true, role: true, firstName: true, lastName: true, phone: true, createdAt: true },
   });
-  return rows.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() }));
+  return rows.map((u) => ({
+    ...u,
+    accountStatus: statusMap[u.id] ?? "ACTIVE",
+    createdAt: u.createdAt.toISOString(),
+  }));
 }
 
 export async function patchUserRole(userId: string, targetUserId: string, role: Role) {
@@ -136,6 +178,37 @@ export async function patchUserRole(userId: string, targetUserId: string, role: 
     select: { id: true, email: true, role: true },
   });
   return updated;
+}
+
+export async function patchUserStatus(userId: string, targetUserId: string, status: AccountStatus) {
+  const admin = await requireAdmin(userId);
+  await prisma.user.findUniqueOrThrow({ where: { id: targetUserId }, select: { id: true } });
+  await setUserStatusInPreferences(admin.id, targetUserId, status);
+  return { id: targetUserId, accountStatus: status };
+}
+
+export async function deleteUser(userId: string, targetUserId: string) {
+  const admin = await requireAdmin(userId);
+  if (userId === targetUserId) {
+    throw new Error("You cannot delete your own account.");
+  }
+  const existing = await prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true } });
+  if (!existing) {
+    throw new Error("User not found");
+  }
+  await prisma.user.delete({ where: { id: targetUserId } });
+
+  const currentMap = getUserStatusMap(admin.preferences);
+  if (currentMap[targetUserId]) {
+    delete currentMap[targetUserId];
+    const pref = asObject(admin.preferences);
+    const next = { ...pref, userStatusMap: currentMap };
+    await prisma.admin.update({
+      where: { id: admin.id },
+      data: { preferences: next as Prisma.InputJsonValue },
+    });
+  }
+  return { success: true };
 }
 
 export async function getFinancialReport(userId: string) {
@@ -167,7 +240,7 @@ export async function getFinancialReport(userId: string) {
   };
 }
 
-export async function getActivity(userId: string) {
+export async function getActivity(userId: string, range: "24h" | "7d" | "30d" | "all" = "24h") {
   await requireAdmin(userId);
   const [users, appointments, txns, labs] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: 'desc' }, take: 20 }),
@@ -181,7 +254,22 @@ export async function getActivity(userId: string) {
   for (const t of txns) items.push({ id: `t-${t.id}`, lane: 'Billing', title: `Transaction ${t.status}`, status: t.status, time: t.updatedAt.toISOString() });
   for (const l of labs) items.push({ id: `l-${l.id}`, lane: 'Labs', title: `Critical lab: ${l.title}`, status: l.status, time: l.createdAt.toISOString() });
   items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  return { items: items.slice(0, 60) };
+  const allItems = items.slice(0, 100);
+
+  if (range === "all") {
+    return { items: allItems, allItems };
+  }
+
+  const now = Date.now();
+  const windowMs =
+    range === "24h"
+      ? 24 * 60 * 60 * 1000
+      : range === "7d"
+        ? 7 * 24 * 60 * 60 * 1000
+        : 30 * 24 * 60 * 60 * 1000;
+
+  const filtered = allItems.filter((item) => now - new Date(item.time).getTime() <= windowMs);
+  return { items: filtered, allItems };
 }
 
 export async function getAudit(userId: string) {
@@ -191,10 +279,11 @@ export async function getAudit(userId: string) {
     prisma.appointment.findMany({ orderBy: { updatedAt: 'desc' }, take: 25 }),
     prisma.transaction.findMany({ orderBy: { updatedAt: 'desc' }, take: 25 }),
   ]);
+  const ipAddress = "Not captured";
   const logs = [
-    ...userUpdates.map((u) => ({ id: `user-${u.id}`, category: 'USER', message: `User ${u.email} updated`, at: u.updatedAt.toISOString() })),
-    ...apptUpdates.map((a) => ({ id: `appt-${a.id}`, category: 'APPOINTMENT', message: `Appointment ${a.id} updated`, at: a.updatedAt.toISOString() })),
-    ...txUpdates.map((t) => ({ id: `txn-${t.id}`, category: 'TRANSACTION', message: `Transaction ${t.id} updated`, at: t.updatedAt.toISOString() })),
+    ...userUpdates.map((u) => ({ id: `user-${u.id}`, category: 'USER', message: `User ${u.email} updated`, at: u.updatedAt.toISOString(), ipAddress })),
+    ...apptUpdates.map((a) => ({ id: `appt-${a.id}`, category: 'APPOINTMENT', message: `Appointment ${a.id} updated`, at: a.updatedAt.toISOString(), ipAddress })),
+    ...txUpdates.map((t) => ({ id: `txn-${t.id}`, category: 'TRANSACTION', message: `Transaction ${t.id} updated`, at: t.updatedAt.toISOString(), ipAddress })),
   ];
   logs.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
   return { logs: logs.slice(0, 80) };

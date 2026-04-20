@@ -12,6 +12,7 @@ import {
   IconHelp,
   IconInnerShadowTop,
   IconActivity,
+  IconPencil,
   IconFileText,
   IconSettings,
   IconUser,
@@ -30,6 +31,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useAuth } from "@/lib/auth-context"
+import { resolveApiAssetUrl } from "@/lib/api-url"
 
 type DashboardKey = "admin" | "doctor" | "patient" | "pharmacy" | "reception"
 
@@ -62,14 +65,26 @@ const dashboardConfig: Record<DashboardKey, DashboardSidebarConfig> = {
     },
     navMain: [
       { title: "Overview", url: "/dashboard/admin", icon: IconDashboard },
-      { title: "Financial Report", url: "/dashboard/admin/financial-report", icon: IconFileText },
+      {
+        title: "Financial Report",
+        url: "/dashboard/admin/financial-report",
+        icon: IconFileText,
+      },
       { title: "Users", url: "/dashboard/admin/users", icon: IconUsers },
       { title: "Audit", url: "/dashboard/admin/audit", icon: IconCreditCard },
-      { title: "Activity", url: "/dashboard/admin/activity", icon: IconActivity },
+      {
+        title: "Activity",
+        url: "/dashboard/admin/activity",
+        icon: IconActivity,
+      },
     ],
     navSecondary: [
       { title: "Config", url: "/dashboard/admin/config", icon: IconSettings },
-      { title: "Settings", url: "/dashboard/admin/settings", icon: IconSettings },
+      {
+        title: "Settings",
+        url: "/dashboard/admin/settings",
+        icon: IconSettings,
+      },
       { title: "Help", url: "/dashboard/admin/help", icon: IconHelp },
     ],
   },
@@ -83,15 +98,39 @@ const dashboardConfig: Record<DashboardKey, DashboardSidebarConfig> = {
     },
     navMain: [
       { title: "Overview", url: "/dashboard/doctor", icon: IconDashboard },
-      { title: "Appointments", url: "/dashboard/doctor/appointments", icon: IconCalendarEvent },
-      { title: "Lab Reports", url: "/dashboard/doctor/lab-reports", icon: IconFileText },
-      { title: "Billing", url: "/dashboard/doctor/billing", icon: IconCreditCard },
+      {
+        title: "Appointments",
+        url: "/dashboard/doctor/appointments",
+        icon: IconCalendarEvent,
+      },
+      {
+        title: "Lab Reports",
+        url: "/dashboard/doctor/lab-reports",
+        icon: IconFileText,
+      },
+      {
+        title: "Billing",
+        url: "/dashboard/doctor/billing",
+        icon: IconCreditCard,
+      },
       { title: "Profile", url: "/dashboard/doctor/profile", icon: IconUser },
-      { title: "Activity", url: "/dashboard/doctor/activity", icon: IconActivity },
+      {
+        title: "Activity",
+        url: "/dashboard/doctor/activity",
+        icon: IconActivity,
+      },
     ],
     navSecondary: [
-      { title: "Settings", url: "/dashboard/doctor/settings", icon: IconSettings },
-      { title: "Authorize Signature", url: "/dashboard/doctor/authorize-signature", icon: IconFileText },
+      {
+        title: "Settings",
+        url: "/dashboard/doctor/settings",
+        icon: IconSettings,
+      },
+      {
+        title: "Authorize Signature",
+        url: "/dashboard/doctor/authorize-signature",
+        icon: IconFileText,
+      },
       { title: "Help", url: "/dashboard/doctor/help", icon: IconHelp },
     ],
   },
@@ -119,7 +158,7 @@ const dashboardConfig: Record<DashboardKey, DashboardSidebarConfig> = {
       {
         title: "Registration",
         url: "/dashboard/patient/registration",
-        icon: IconActivity,
+        icon: IconPencil,
       },
       {
         title: "Activity",
@@ -221,7 +260,7 @@ function getDashboardKey(pathname: string): DashboardKey {
     firstSegment === "doctor" ||
     firstSegment === "patient" ||
     firstSegment === "pharmacy" ||
-    firstSegment === "reception" 
+    firstSegment === "reception"
   ) {
     return firstSegment
   }
@@ -236,6 +275,14 @@ export function getDashboardConfig(pathname: string) {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const data = getDashboardConfig(pathname)
+  const { user } = useAuth()
+  const userDisplay = user
+    ? {
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        email: user.email,
+        avatar: resolveApiAssetUrl(user.avatarUrl) ?? data.user.avatar,
+      }
+    : data.user
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -261,7 +308,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userDisplay} />
       </SidebarFooter>
     </Sidebar>
   )

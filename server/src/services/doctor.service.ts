@@ -23,6 +23,7 @@ async function requireDoctor(userId: string) {
           firstName: true,
           lastName: true,
           phone: true,
+          avatarUrl: true,
           role: true,
         },
       },
@@ -323,14 +324,24 @@ export async function searchPatients(userId: string, q: string) {
   await requireDoctor(userId);
   const term = q.trim();
   if (term.length < 2) return [];
+  const searchTokens = term.split(/\s+/).filter(Boolean);
 
   const patients = await prisma.patient.findMany({
     where: {
       OR: [
+        { id: { contains: term, mode: 'insensitive' } },
         { user: { firstName: { contains: term, mode: 'insensitive' } } },
         { user: { lastName: { contains: term, mode: 'insensitive' } } },
         { user: { email: { contains: term, mode: 'insensitive' } } },
         { user: { phone: { contains: term, mode: 'insensitive' } } },
+        {
+          AND: searchTokens.map((token) => ({
+            OR: [
+              { user: { firstName: { contains: token, mode: 'insensitive' } } },
+              { user: { lastName: { contains: token, mode: 'insensitive' } } },
+            ],
+          })),
+        },
       ],
     },
     take: 20,

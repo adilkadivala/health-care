@@ -2,7 +2,13 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +20,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -25,6 +37,13 @@ import {
 } from "@/components/ui/table"
 import { IconDownload, IconSearch } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
+
+import { useAuth } from "@/lib/auth-context"
+import {
+  downloadLabReportsPdf,
+  type DoctorLabReportPdfItem,
+} from "@/lib/doctor-lab-report-pdf"
 import { api } from "@/lib/http"
 
 type DoctorReportsResponse = {
@@ -34,13 +53,74 @@ type DoctorReportsResponse = {
     orderedOn: string
     title: string
     summary: string | null
+    resultNotes: string | null
+    reviewedAt: string | null
+    fileUrls: string[]
     status: string
   }>
 }
 
+type ReportExportRange = "today" | "7-days" | "30-days" | "all"
+type ReportExportFormat = "csv" | "json" | "pdf"
+
+const formatLabel = (value: string | null | undefined, fallback = "Not available") => {
+  const normalized = value?.trim()
+  if (!normalized) return fallback
+
+  return normalized
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+}
+
+const getDateRangeStart = (range: ReportExportRange) => {
+  if (range === "all") return null
+
+  const now = new Date()
+  const start = new Date(now)
+
+  if (range === "today") {
+    start.setHours(0, 0, 0, 0)
+    return start
+  }
+
+  start.setDate(start.getDate() - (range === "7-days" ? 7 : 30))
+  return start
+}
+
+const safeValue = (
+  value: string | null | undefined,
+  fallback = "Not available",
+) => {
+  const normalized = value?.trim()
+  return normalized ? normalized : fallback
+}
+
+const triggerBrowserDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+const escapeCsvValue = (value: string) => `"${value.replaceAll('"', '""')}"`
+
 export default function LabReports() {
-  const [reports, setReports] = useState<DoctorReportsResponse["labReports"]>([])
+  const { user } = useAuth()
+  const doctorDisplayName = user
+    ? `Dr. ${user.firstName} ${user.lastName}`.trim()
+    : "Doctor"
+
+  const [reports, setReports] =
+    useState<DoctorReportsResponse["labReports"]>([])
   const [search, setSearch] = useState("")
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [exportRange, setExportRange] = useState<ReportExportRange>("7-days")
+  const [exportFormat, setExportFormat] =
+    useState<ReportExportFormat>("pdf")
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -60,28 +140,134 @@ export default function LabReports() {
         ...report,
         patient: report.patientName,
         test: report.title,
-        result: report.summary ?? "-",
-        orderedOn: new Date(report.orderedOn).toLocaleString(),
+        result: report.summary ?? "No summary available",
+        orderedOnLabel: new Date(report.orderedOn).toLocaleString(),
         priority:
           report.status === "CRITICAL"
             ? "Critical"
             : report.status === "PENDING_REVIEW"
               ? "High"
               : "Routine",
-        status: report.status
-          .toLowerCase()
-          .replaceAll("_", " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase()),
+        statusLabel: formatLabel(report.status),
       })),
     [reports],
   )
+
   const filtered = useMemo(
     () =>
       mapped.filter((report) =>
-        `${report.id} ${report.patient} ${report.test}`.toLowerCase().includes(search.toLowerCase()),
+        `${report.id} ${report.patient} ${report.test}`
+          .toLowerCase()
+          .includes(search.toLowerCase()),
       ),
     [mapped, search],
   )
+
+  const filteredForExport = useMemo(() => {
+    const start = getDateRangeStart(exportRange)
+    if (!start) return filtered
+
+    return filtered.filter((report) => new Date(report.orderedOn) >= start)
+  }, [exportRange, filtered])
+
+  const mapReportToPdf = (report: (typeof mapped)[number]): DoctorLabReportPdfItem => ({
+    id: report.id,
+    patientName: report.patient,
+    title: report.test,
+    status: report.status,
+    summary: report.summary,
+    resultNotes: report.resultNotes,
+    orderedOn: report.orderedOn,
+    reviewedAt: report.reviewedAt,
+    fileUrls: report.fileUrls,
+  })
+
+  const buildCsvContent = (items: typeof filteredForExport) =>
+    [
+      [
+        "reportId",
+        "patientName",
+        "orderedOn",
+        "testTitle",
+        "status",
+        "summary",
+        "resultNotes",
+      ]
+        .map(escapeCsvValue)
+        .join(","),
+      ...items.map((report) =>
+        [
+          report.id,
+          report.patient,
+          new Date(report.orderedOn).toISOString(),
+          report.test,
+          report.statusLabel,
+          safeValue(report.summary, "No summary available"),
+          safeValue(report.resultNotes, "No result notes"),
+        ]
+          .map((value) => escapeCsvValue(String(value)))
+          .join(","),
+      ),
+    ].join("\n")
+
+  const handleDownloadSingleReport = (report: (typeof mapped)[number]) => {
+    downloadLabReportsPdf(
+      [mapReportToPdf(report)],
+      `lab-report-${report.id}.pdf`,
+      {
+        doctorName: doctorDisplayName,
+        title: "Medical Lab Report",
+      },
+    )
+    toast.success("Lab report downloaded.")
+  }
+
+  const handleExport = async () => {
+    if (filteredForExport.length === 0) {
+      toast.error("No lab reports match the current filters.")
+      return
+    }
+
+    const filename = `doctor-lab-reports-${new Date()
+      .toISOString()
+      .slice(0, 10)}.${exportFormat}`
+
+    try {
+      setDownloading(true)
+
+      if (exportFormat === "pdf") {
+        downloadLabReportsPdf(
+          filteredForExport.map(mapReportToPdf),
+          filename,
+          {
+            doctorName: doctorDisplayName,
+            title: "Doctor Lab Reports Export",
+          },
+        )
+      } else if (exportFormat === "csv") {
+        triggerBrowserDownload(
+          new Blob([buildCsvContent(filteredForExport)], {
+            type: "text/csv;charset=utf-8",
+          }),
+          filename,
+        )
+      } else {
+        triggerBrowserDownload(
+          new Blob([JSON.stringify(filteredForExport, null, 2)], {
+            type: "application/json;charset=utf-8",
+          }),
+          filename,
+        )
+      }
+
+      setIsExportDialogOpen(false)
+      toast.success(`Reports downloaded as ${exportFormat.toUpperCase()}.`)
+    } catch {
+      toast.error("Failed to download lab reports.")
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -92,7 +278,10 @@ export default function LabReports() {
             Review report findings, set priority, and track escalation status.
           </p>
         </div>
-        <Dialog>
+        <Dialog
+          open={isExportDialogOpen}
+          onOpenChange={setIsExportDialogOpen}
+        >
           <DialogTrigger asChild>
             <Button variant="outline">
               <IconDownload className="mr-2 h-4 w-4" />
@@ -109,7 +298,12 @@ export default function LabReports() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="report-range">Date Range</Label>
-                <Select defaultValue="7-days">
+                <Select
+                  value={exportRange}
+                  onValueChange={(value: ReportExportRange) =>
+                    setExportRange(value)
+                  }
+                >
                   <SelectTrigger id="report-range">
                     <SelectValue placeholder="Select date range" />
                   </SelectTrigger>
@@ -123,7 +317,12 @@ export default function LabReports() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="report-format">Format</Label>
-                <Select defaultValue="csv">
+                <Select
+                  value={exportFormat}
+                  onValueChange={(value: ReportExportFormat) =>
+                    setExportFormat(value)
+                  }
+                >
                   <SelectTrigger id="report-format">
                     <SelectValue placeholder="Select format" />
                   </SelectTrigger>
@@ -136,7 +335,13 @@ export default function LabReports() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Download</Button>
+              <Button
+                type="button"
+                onClick={() => void handleExport()}
+                disabled={downloading}
+              >
+                {downloading ? "Preparing..." : "Download"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -156,7 +361,7 @@ export default function LabReports() {
               placeholder="Search report ID or patient..."
               className="w-[280px] pl-8"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
         </CardHeader>
@@ -171,46 +376,85 @@ export default function LabReports() {
                 <TableHead>Result Summary</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell className="font-mono text-xs">{report.id}</TableCell>
-                  <TableCell className="font-medium">{report.patient}</TableCell>
-                  <TableCell className="text-muted-foreground">{report.orderedOn}</TableCell>
-                  <TableCell>{report.test}</TableCell>
-                  <TableCell className="text-muted-foreground">{report.result}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={report.priority === "Critical" ? "destructive" : "outline"}
-                      className={
-                        report.priority === "High"
-                          ? "bg-orange-500/15 text-orange-700 border-orange-200 hover:bg-orange-500/20 dark:text-orange-400 dark:border-orange-900"
-                          : report.priority === "Routine"
-                            ? "bg-slate-500/15 text-slate-700 border-slate-200 hover:bg-slate-500/20 dark:text-slate-300 dark:border-slate-800"
-                            : ""
-                      }
-                    >
-                      {report.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={report.status === "Escalated" ? "destructive" : "secondary"}
-                      className={
-                        report.status === "Reviewed"
-                          ? "bg-green-500/15 text-green-700 border-green-200 hover:bg-green-500/20 dark:text-green-400 dark:border-green-900"
-                          : report.status === "Pending Review"
-                            ? "bg-blue-500/15 text-blue-700 border-blue-200 hover:bg-blue-500/20 dark:text-blue-400 dark:border-blue-900"
-                            : ""
-                      }
-                    >
-                      {report.status}
-                    </Badge>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="py-6 text-center text-muted-foreground"
+                  >
+                    No lab reports matched the current search.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filtered.map((report) => (
+                  <TableRow key={report.id}>
+                    <TableCell className="font-mono text-xs">
+                      {report.id}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {report.patient}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {report.orderedOnLabel}
+                    </TableCell>
+                    <TableCell>{report.test}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {report.result}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          report.priority === "Critical"
+                            ? "destructive"
+                            : "outline"
+                        }
+                        className={
+                          report.priority === "High"
+                            ? "border-orange-200 bg-orange-500/15 text-orange-700 hover:bg-orange-500/20 dark:border-orange-900 dark:text-orange-400"
+                            : report.priority === "Routine"
+                              ? "border-slate-200 bg-slate-500/15 text-slate-700 hover:bg-slate-500/20 dark:border-slate-800 dark:text-slate-300"
+                              : ""
+                        }
+                      >
+                        {report.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          report.statusLabel === "Escalated"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className={
+                          report.statusLabel === "Reviewed"
+                            ? "border-green-200 bg-green-500/15 text-green-700 hover:bg-green-500/20 dark:border-green-900 dark:text-green-400"
+                            : report.statusLabel === "Pending Review"
+                              ? "border-blue-200 bg-blue-500/15 text-blue-700 hover:bg-blue-500/20 dark:border-blue-900 dark:text-blue-400"
+                              : ""
+                        }
+                      >
+                        {report.statusLabel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadSingleReport(report)}
+                      >
+                        <IconDownload className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
