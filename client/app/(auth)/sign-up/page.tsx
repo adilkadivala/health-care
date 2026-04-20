@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/http"
 import { useAuth } from "@/lib/auth-context"
 import { getDefaultDashboardPath } from "@/lib/auth-routes"
+import { toast } from "sonner"
 
 export default function SignUp() {
   const router = useRouter();
@@ -55,9 +56,11 @@ export default function SignUp() {
       localStorage.setItem("user", JSON.stringify(loginRes.user));
 
       await refreshSession();
+      toast.success("Account created. You are signed in.");
       router.push(getDefaultDashboardPath(loginRes.user.role));
     } catch (err: any) {
       setError(err.message);
+      toast.error(err?.message ?? "Sign up failed.");
     } finally {
       setLoading(false);
     }

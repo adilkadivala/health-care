@@ -23,6 +23,7 @@ import {
 import { IconPlus, IconUserScan } from "@tabler/icons-react"
 import { api } from "@/lib/http"
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 
 type ReceptionWalkinsResponse = {
   walkIns: Array<{
@@ -42,17 +43,17 @@ export default function WalkIn() {
 
   const loadWalkIns = async () => {
     try {
-      const data = await api.get<ReceptionWalkinsResponse>("/reception/walk-ins")
+      const data = await api.get<ReceptionWalkinsResponse>(`/reception/walk-ins?q=${encodeURIComponent(query)}`)
       setWalkIns(data.walkIns)
     } catch {
       setWalkIns([])
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     void loadWalkIns()
-  }, [])
+  }, [query])
 
   const walkInRows = useMemo(
     () =>
@@ -67,35 +68,38 @@ export default function WalkIn() {
   )
 
   const handleCreateWalkIn = async () => {
-    if (!patientName || !reason) return
+    if (!patientName || !reason) {
+      toast.error("Patient name and reason are required.")
+      return
+    }
     try {
       await api.post("/reception/walk-ins", { patientName, reason, priority: 3 })
       setPatientName("")
       setReason("")
       await loadWalkIns()
+      toast.success("Walk-in created successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to create walk-in.")
     }
   }
   const handleDeleteWalkIn = async (id: string) => {
     try {
       await api.delete(`/reception/walk-ins/${id}`)
       await loadWalkIns()
+      toast.success("Walk-in deleted successfully.")
     } catch {
-      // Keep card list unchanged on failure.
+      toast.error("Failed to delete walk-in.")
     }
   }
   const handleMarkInProgress = async (id: string, name: string, visitReason: string) => {
     try {
       await api.patch(`/reception/walk-ins/${id}`, { status: "IN_TRIAGE", patientName: name, reason: visitReason })
       await loadWalkIns()
+      toast.success("Walk-in updated successfully.")
     } catch {
-      // Keep card list unchanged on failure.
+      toast.error("Failed to update walk-in.")
     }
   }
-  const filteredRows = walkInRows.filter((row) =>
-    `${row.name} ${row.reason} ${row.id}`.toLowerCase().includes(query.toLowerCase()),
-  )
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -141,7 +145,7 @@ export default function WalkIn() {
         <div className="md:col-span-2 lg:col-span-3">
           <Input placeholder="Search walk-in..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        {filteredRows.map((row) => (
+        {walkInRows.map((row) => (
           <Card key={row.id}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{row.name}</CardTitle>

@@ -40,6 +40,7 @@ type PatientReportsResponse = {
 
 export default function LabReport() {
   const [reports, setReports] = useState<PatientReportsResponse["labReports"]>([])
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     const load = async () => {
@@ -64,6 +65,13 @@ export default function LabReport() {
         summary: r.summary ?? "-",
       })),
     [reports],
+  )
+  const filtered = useMemo(
+    () =>
+      mapped.filter((report) =>
+        `${report.id} ${report.test} ${report.doctor}`.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [mapped, search],
   )
 
   return (
@@ -133,7 +141,12 @@ export default function LabReport() {
           </div>
           <div className="relative">
             <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by test or report ID..." className="w-[260px] pl-8" />
+            <Input
+              placeholder="Search by test or report ID..."
+              className="w-[260px] pl-8"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -149,7 +162,7 @@ export default function LabReport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mapped.map((report) => (
+              {filtered.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell className="font-mono text-xs">{report.id}</TableCell>
                   <TableCell>{report.date}</TableCell>

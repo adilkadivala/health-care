@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useEffect, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 export default function Profile() {
   const [fullName, setFullName] = useState("Aarav Sharma")
@@ -44,7 +45,10 @@ export default function Profile() {
   const handleSavePersonal = async () => {
     const [firstName, ...rest] = fullName.trim().split(" ")
     const lastName = rest.join(" ")
-    if (!firstName || !lastName) return
+    if (!firstName || !lastName) {
+      toast.error("Please enter both first and last name.")
+      return
+    }
     try {
       const data = await api.patch<{
         user: { firstName: string; lastName: string; email: string; phone?: string | null }
@@ -52,8 +56,9 @@ export default function Profile() {
       setFullName(`${data.user.firstName} ${data.user.lastName}`.trim())
       setEmail(data.user.email)
       setPhone(data.user.phone ?? "")
+      toast.success("Personal details updated successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to update personal details.")
     }
   }
 
@@ -63,8 +68,9 @@ export default function Profile() {
         allergies: allergies.split(",").map((item) => item.trim()).filter(Boolean),
         medicalHistory: conditions,
       })
+      toast.success("Medical information updated successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to update medical information.")
     }
   }
 

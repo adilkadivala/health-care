@@ -30,6 +30,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type AdminUsersResponse = {
   users: Array<{ id: string; email: string; role: string; firstName: string; lastName: string }>
@@ -59,8 +60,9 @@ export default function Users() {
       setChangingId(id)
       await api.patch(`/admin/users/${id}/role`, { role })
       await loadUsers()
+      toast.success("User role updated successfully.")
     } catch {
-      // Keep table unchanged on failure.
+      toast.error("Failed to update user role.")
     } finally {
       setChangingId(null)
     }

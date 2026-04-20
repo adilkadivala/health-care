@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { IconStethoscope, IconUser } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 export default function Profile() {
   const [fullName, setFullName] = useState("Dr. Sarah Jenkins")
@@ -55,8 +56,10 @@ export default function Profile() {
       }>("/doctor/me", { firstName, lastName, phone })
       setFullName(`Dr. ${data.user.firstName} ${data.user.lastName}`.trim())
       setPhone(data.user.phone ?? "")
+      toast.success("Personal details updated successfully.")
     } catch (error) {
       console.error("Failed to update doctor personal details", error)
+      toast.error("Failed to update personal details.")
     }
   }
 
@@ -70,8 +73,10 @@ export default function Profile() {
           timezone,
         },
       })
+      toast.success("Clinical preferences updated successfully.")
     } catch (error) {
       console.error("Failed to update doctor clinical preferences", error)
+      toast.error("Failed to update clinical preferences.")
     }
   }
 

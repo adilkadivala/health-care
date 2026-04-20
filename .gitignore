@@ -19,6 +19,7 @@ node_modules/
 package-lock.json
 /out/
 init.sql/
+dist/
 uploads/
 
 # production
