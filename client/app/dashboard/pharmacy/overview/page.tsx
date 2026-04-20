@@ -26,6 +26,7 @@ import {
 import { IconPackage, IconPlus, IconReportMedical, IconSearch, IconTrendingUp, IconTrendingDown, IconAlertTriangle } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type PharmacyOrdersResponse = {
   orders: Array<{
@@ -89,8 +90,9 @@ export default function Overview() {
     try {
       await api.patch(`/pharmacy/orders/${orderId}`, { status: normalizedStatus })
       await loadOverviewData()
+      toast.success("Order status updated successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to update order status.")
     }
   }
 

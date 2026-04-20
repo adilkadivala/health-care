@@ -26,6 +26,7 @@ import {
 import { IconFilter, IconPlus, IconSearch } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type PharmacyOrdersResponse = {
   orders: Array<{
@@ -57,7 +58,10 @@ export default function Orders() {
   useEffect(() => { void loadOrders() }, [search])
   const handleCreateOrder = async () => {
     const count = Number(itemCount)
-    if (!supplier || !count) return
+    if (!supplier || !count) {
+      toast.error("Supplier and item count are required.")
+      return
+    }
     try {
       await api.post("/pharmacy/orders", {
         supplier,
@@ -70,8 +74,9 @@ export default function Orders() {
       setAmount("")
       setEta("")
       await loadOrders()
+      toast.success("Purchase order created successfully.")
     } catch {
-      // Keep list unchanged on failure.
+      toast.error("Failed to create purchase order.")
     }
   }
 

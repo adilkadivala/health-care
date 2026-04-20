@@ -26,6 +26,7 @@ import {
 import { IconCalendarEvent, IconFileText, IconSearch, IconStethoscope, IconTrendingUp, IconTrendingDown } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type DoctorOverviewResponse = {
   metrics: {
@@ -105,13 +106,19 @@ export default function Overview() {
     }
   }
   const handleBookPatient = async () => {
-    if (!bookingName || !bookingTime) return
+    if (!bookingName || !bookingTime) {
+      toast.error("Patient name and time are required.")
+      return
+    }
     try {
       const matches = await api.get<{ patients: Array<{ id: string }> }>(
         `/doctor/patients/search?q=${encodeURIComponent(bookingName.trim())}`,
       )
       const patientId = matches.patients[0]?.id
-      if (!patientId) return
+      if (!patientId) {
+        toast.error("No patient found for this name.")
+        return
+      }
       const startTime = new Date()
       const [hours, minutes] = bookingTime.split(":").map(Number)
       startTime.setHours(hours, minutes, 0, 0)
@@ -123,8 +130,9 @@ export default function Overview() {
         endTime: endTime.toISOString(),
         reasonForVisit: "consultation",
       })
+      toast.success("Appointment booked successfully.")
     } catch {
-      // Keep dialog interaction unchanged if booking fails.
+      toast.error("Failed to book appointment.")
     }
   }
 

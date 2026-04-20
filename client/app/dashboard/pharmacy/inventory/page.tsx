@@ -26,6 +26,7 @@ import {
 import { IconPackageImport, IconSearch } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type PharmacyInventoryResponse = {
   inventory: Array<{
@@ -58,18 +59,25 @@ export default function Inventory() {
 
   const handleSaveBatch = async () => {
     const qty = Number(quantity)
-    if (!medicineName || Number.isNaN(qty)) return
+    if (!medicineName || Number.isNaN(qty)) {
+      toast.error("Medicine and quantity are required.")
+      return
+    }
     const match = inventoryItems.find((item) =>
       item.name.toLowerCase().includes(medicineName.toLowerCase()),
     )
-    if (!match) return
+    if (!match) {
+      toast.error("No matching medicine found in inventory.")
+      return
+    }
     try {
       await api.patch(`/pharmacy/inventory/${match.id}`, {
         stockQuantity: qty,
       })
       await loadInventory()
+      toast.success("Inventory updated successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to update inventory.")
     }
   }
 

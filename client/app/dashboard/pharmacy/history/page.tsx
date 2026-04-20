@@ -34,6 +34,7 @@ type PharmacyHistoryResponse = {
 
 export default function History() {
   const [history, setHistory] = useState<PharmacyHistoryResponse | null>(null)
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     const load = async () => {
@@ -69,6 +70,13 @@ export default function History() {
       })),
     ],
     [history],
+  )
+  const filteredRows = useMemo(
+    () =>
+      historyRows.filter((row) =>
+        `${row.txId} ${row.patient} ${row.action}`.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [historyRows, search],
   )
 
   return (
@@ -138,7 +146,12 @@ export default function History() {
           </div>
           <div className="relative">
             <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search tx ID or patient..." className="w-[250px] pl-8" />
+            <Input
+              placeholder="Search tx ID or patient..."
+              className="w-[250px] pl-8"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -155,7 +168,7 @@ export default function History() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {historyRows.map((row) => (
+              {filteredRows.map((row) => (
                 <TableRow key={row.txId}>
                   <TableCell className="font-mono text-xs">{row.txId}</TableCell>
                   <TableCell>{row.date}</TableCell>

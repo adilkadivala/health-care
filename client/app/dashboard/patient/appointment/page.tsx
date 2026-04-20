@@ -38,6 +38,7 @@ import {
 import { IconFilter, IconPlus, IconSearch } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type PatientAppointmentsResponse = {
   appointments: Array<{
@@ -57,6 +58,7 @@ export default function Appointment() {
   const [doctorName, setDoctorName] = useState("")
   const [date, setDate] = useState("")
   const [time, setTime] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [doctors, setDoctors] = useState<
     Array<{ id: string; name: string; department: string }>
   >([])
@@ -89,10 +91,16 @@ export default function Appointment() {
   }
 
   const handleBookAppointment = async () => {
-    if (!date || !time) return
+    if (!date || !time) {
+      toast.error("Please select appointment date and time.")
+      return
+    }
     try {
       const selectedDoctor = doctors.find((doctor) => doctor.id === doctorName)
-      if (!selectedDoctor) return
+      if (!selectedDoctor) {
+        toast.error("Please choose a doctor before booking.")
+        return
+      }
       const startTime = new Date(`${date}T${time}:00`)
       const endTime = new Date(startTime.getTime() + 30 * 60 * 1000)
       await api.post("/patient/appointments", {
@@ -103,8 +111,9 @@ export default function Appointment() {
         reasonForVisit: `${department} consultation`,
       })
       await loadAppointments()
+      toast.success("Appointment booked successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to book appointment. Please try again.")
     }
   }
 
@@ -128,6 +137,15 @@ export default function Appointment() {
         }
       }),
     [appointments]
+  )
+  const filtered = useMemo(
+    () =>
+      mapped.filter((appointment) =>
+        `${appointment.doctor} ${appointment.department} ${appointment.id}`
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()),
+      ),
+    [mapped, searchQuery],
   )
 
   return (
@@ -235,6 +253,8 @@ export default function Appointment() {
               <Input
                 placeholder="Search doctor or department..."
                 className="w-[250px] pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button variant="outline" size="icon">
@@ -255,7 +275,7 @@ export default function Appointment() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mapped.map((appointment) => (
+              {filtered.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-mono text-xs">
                     {appointment.id}

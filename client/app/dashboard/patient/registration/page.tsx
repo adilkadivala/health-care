@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { IconCheck, IconClock, IconFileText } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 const checklist = [
   { id: 1, item: "Basic profile information", status: "Completed" },
@@ -37,8 +38,9 @@ export default function Registration() {
         primaryConcern,
         medicalHistory,
       })
+      toast.success("Registration submitted successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to submit registration.")
     }
   }
 

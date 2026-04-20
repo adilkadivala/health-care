@@ -37,6 +37,7 @@ import {
 } from "@tabler/icons-react"
 import { api } from "@/lib/http"
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 
 type ReceptionOverviewResponse = {
   metrics: {
@@ -93,14 +94,18 @@ export default function Overview() {
   )
 
   const handleQuickCheckin = async () => {
-    if (!patientName || !reason) return
+    if (!patientName || !reason) {
+      toast.error("Patient name and visit reason are required.")
+      return
+    }
     try {
       await api.post("/reception/walk-ins", { patientName, reason, priority: 3 })
       setPatientName("")
       setReason("")
       await loadData()
+      toast.success("Patient checked in successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to check in patient.")
     }
   }
 

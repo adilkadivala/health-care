@@ -26,6 +26,7 @@ import {
 import { IconCalendarEvent, IconFilter, IconPlus, IconSearch } from "@tabler/icons-react"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "@/lib/http"
+import { toast } from "sonner"
 
 type DoctorAppointmentsResponse = {
   appointments: Array<{
@@ -59,13 +60,19 @@ export default function Appointments() {
   }
 
   const handleCreateAppointment = async () => {
-    if (!patientName || !date || !time) return
+    if (!patientName || !date || !time) {
+      toast.error("Patient name, date, and time are required.")
+      return
+    }
     try {
       const search = await api.get<{ patients: Array<{ id: string }> }>(
         `/doctor/patients/search?q=${encodeURIComponent(patientName)}`,
       )
       const patientId = search.patients[0]?.id
-      if (!patientId) return
+      if (!patientId) {
+        toast.error("No patient matched your search.")
+        return
+      }
       const startTime = new Date(`${date}T${time}:00`)
       const endTime = new Date(startTime.getTime() + 30 * 60 * 1000)
       await api.post("/doctor/appointments", {
@@ -76,8 +83,9 @@ export default function Appointments() {
         reasonForVisit: visitType,
       })
       await loadAppointments()
+      toast.success("Appointment created successfully.")
     } catch {
-      // keep UI unchanged; silent failure
+      toast.error("Failed to create appointment.")
     }
   }
 
