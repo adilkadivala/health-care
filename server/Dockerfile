@@ -14,6 +14,7 @@ COPY docker-build-prisma.sh /usr/local/bin/docker-build-prisma.sh
 
 # prisma.config.ts requires DATABASE_URL to load during generate.
 ARG DATABASE_URL
+ARG DIRECT_URL
 RUN chmod +x /usr/local/bin/docker-build-prisma.sh \
   && /usr/local/bin/docker-build-prisma.sh
 
