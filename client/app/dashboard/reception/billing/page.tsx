@@ -63,6 +63,85 @@ export default function Billing() {
       })),
     [billing],
   )
+  const filteredBillingRows = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    if (!term) return billingRows
+    return billingRows.filter(
+      (row) =>
+        row.id.toLowerCase().includes(term) ||
+        row.patient.toLowerCase().includes(term) ||
+        row.service.toLowerCase().includes(term) ||
+        row.status.toLowerCase().includes(term),
+    )
+  }, [billingRows, query])
+  const handleDownloadCsv = () => {
+    if (!filteredBillingRows.length) return
+    const headers = ["Invoice ID", "Patient", "Service", "Copay", "Status"]
+    const escapeCsv = (value: string) => `"${value.replaceAll('"', '""')}"`
+    const lines = [
+      headers.join(","),
+      ...filteredBillingRows.map((row) =>
+        [
+          escapeCsv(row.id),
+          escapeCsv(row.patient),
+          escapeCsv(row.service),
+          escapeCsv(row.copay),
+          escapeCsv(row.status),
+        ].join(","),
+      ),
+    ]
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "billing-report.csv"
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  const handleDownloadPdf = () => {
+    if (!filteredBillingRows.length) return
+    const tableRows = filteredBillingRows
+      .map(
+        (row) =>
+          `<tr><td>${row.id}</td><td>${row.patient}</td><td>${row.service}</td><td>${row.copay}</td><td>${row.status}</td></tr>`,
+      )
+      .join("")
+    const html = `
+      <html>
+        <head>
+          <title>Billing Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            h2 { margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h2>Billing Report</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice ID</th>
+                <th>Patient</th>
+                <th>Service</th>
+                <th>Copay</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -129,7 +208,7 @@ export default function Billing() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {billingRows.map((row) => (
+              {filteredBillingRows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-mono text-xs">{row.id}</TableCell>
                   <TableCell className="font-medium">{row.patient}</TableCell>
@@ -144,8 +223,9 @@ export default function Billing() {
               ))}
             </TableBody>
           </Table>
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline">Export Report</Button>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={handleDownloadCsv}>Download CSV</Button>
+            <Button variant="outline" onClick={handleDownloadPdf}>Download PDF</Button>
           </div>
         </CardContent>
       </Card>

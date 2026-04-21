@@ -65,6 +65,15 @@ export default function FinancialReportPage() {
     return Array.from(totals.entries()).map(([name, value]) => ({ name, value }))
   }, [financialData])
   const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
+  const formatCurrency = (value: unknown) => {
+    const numericValue =
+      typeof value === "number"
+        ? value
+        : typeof value === "string"
+          ? Number(value)
+          : NaN
+    return Number.isFinite(numericValue) ? `$${numericValue.toLocaleString()}` : "$0"
+  }
 
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6 py-6 pt-0">
@@ -131,7 +140,7 @@ export default function FinancialReportPage() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `$${Number(value).toLocaleString()}`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -150,7 +159,7 @@ export default function FinancialReportPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => `$${Number(value).toLocaleString()}`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
                 <Bar dataKey="value" fill="#2563eb" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

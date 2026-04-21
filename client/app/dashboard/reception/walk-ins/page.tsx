@@ -40,6 +40,7 @@ export default function WalkIn() {
   const [patientName, setPatientName] = useState("")
   const [reason, setReason] = useState("")
   const [query, setQuery] = useState("")
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const loadWalkIns = async () => {
     try {
@@ -66,6 +67,17 @@ export default function WalkIn() {
       })),
     [walkIns],
   )
+  const filteredWalkInRows = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    if (!term) return walkInRows
+    return walkInRows.filter(
+      (row) =>
+        row.id.toLowerCase().includes(term) ||
+        row.name.toLowerCase().includes(term) ||
+        row.reason.toLowerCase().includes(term) ||
+        row.status.toLowerCase().includes(term),
+    )
+  }, [walkInRows, query])
 
   const handleCreateWalkIn = async () => {
     if (!patientName || !reason) {
@@ -76,6 +88,7 @@ export default function WalkIn() {
       await api.post("/reception/walk-ins", { patientName, reason, priority: 3 })
       setPatientName("")
       setReason("")
+      setIsCreateOpen(false)
       await loadWalkIns()
       toast.success("Walk-in created successfully.")
     } catch {
@@ -91,9 +104,18 @@ export default function WalkIn() {
       toast.error("Failed to delete walk-in.")
     }
   }
-  const handleMarkInProgress = async (id: string, name: string, visitReason: string) => {
+  const handleMarkInProgress = async (id: string, currentStatus: string) => {
+    const nextStatus =
+      currentStatus === "Waiting"
+        ? "IN_TRIAGE"
+        : currentStatus === "In Triage"
+          ? "TREATED"
+          : "IN_TRIAGE"
     try {
-      await api.patch(`/reception/walk-ins/${id}`, { status: "IN_TRIAGE", patientName: name, reason: visitReason })
+      await api.patch(`/reception/walk-ins/${id}`, {
+        status: nextStatus,
+        ...(nextStatus === "TREATED" ? { checkOut: true } : {}),
+      })
       await loadWalkIns()
       toast.success("Walk-in updated successfully.")
     } catch {
@@ -110,7 +132,7 @@ export default function WalkIn() {
             Register and prioritize unscheduled arrivals at the reception desk.
           </p>
         </div>
-        <Dialog>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
               <IconPlus className="mr-2 h-4 w-4" />
@@ -145,7 +167,7 @@ export default function WalkIn() {
         <div className="md:col-span-2 lg:col-span-3">
           <Input placeholder="Search walk-in..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        {walkInRows.map((row) => (
+        {filteredWalkInRows.map((row) => (
           <Card key={row.id}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{row.name}</CardTitle>
@@ -170,7 +192,7 @@ export default function WalkIn() {
                 </Badge>
               </div>
               <div className="flex items-center justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => void handleMarkInProgress(row.id, row.name, row.reason)}>Update</Button>
+                <Button size="sm" variant="outline" onClick={() => void handleMarkInProgress(row.id, row.status)}>Update</Button>
                 <Button size="sm" variant="destructive" onClick={() => void handleDeleteWalkIn(row.id)}>Delete</Button>
               </div>
             </CardContent>

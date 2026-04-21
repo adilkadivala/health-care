@@ -59,25 +59,31 @@ export default function Inventory() {
 
   const handleSaveBatch = async () => {
     const qty = Number(quantity)
-    if (!medicineName || Number.isNaN(qty)) {
+    if (!medicineName || Number.isNaN(qty) || qty <= 0) {
       toast.error("Medicine and quantity are required.")
       return
     }
     const match = inventoryItems.find((item) =>
       item.name.toLowerCase().includes(medicineName.toLowerCase()),
     )
-    if (!match) {
-      toast.error("No matching medicine found in inventory.")
-      return
-    }
     try {
-      await api.patch(`/pharmacy/inventory/${match.id}`, {
-        stockQuantity: qty,
-      })
+      if (match) {
+        await api.patch(`/pharmacy/inventory/${match.id}`, {
+          stockQuantity: match.stockQuantity + qty,
+        })
+      } else {
+        await api.post("/pharmacy/inventory", {
+          name: medicineName.trim(),
+          stockQuantity: qty,
+          unitPrice: 0,
+        })
+      }
+      setMedicineName("")
+      setQuantity("")
       await loadInventory()
-      toast.success("Inventory updated successfully.")
+      toast.success("Stock entry saved successfully.")
     } catch {
-      toast.error("Failed to update inventory.")
+      toast.error("Failed to save stock entry.")
     }
   }
 
@@ -94,6 +100,15 @@ export default function Inventory() {
       })),
     [inventoryItems],
   )
+  const filteredMapped = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return mapped
+    return mapped.filter(
+      (item) =>
+        item.sku.toLowerCase().includes(term) ||
+        item.name.toLowerCase().includes(term),
+    )
+  }, [mapped, search])
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -185,7 +200,7 @@ export default function Inventory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mapped.map((item) => (
+              {filteredMapped.map((item) => (
                 <TableRow key={item.sku}>
                   <TableCell className="font-mono text-xs">{item.sku}</TableCell>
                   <TableCell className="font-medium">{item.name}</TableCell>

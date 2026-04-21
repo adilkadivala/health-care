@@ -69,6 +69,17 @@ export default function Appointments() {
       })),
     [appointments]
   )
+  const filteredAppointmentRows = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    if (!term) return appointmentRows
+    return appointmentRows.filter(
+      (row) =>
+        row.id.toLowerCase().includes(term) ||
+        row.patient.toLowerCase().includes(term) ||
+        row.doctor.toLowerCase().includes(term) ||
+        row.status.toLowerCase().includes(term)
+    )
+  }, [appointmentRows, query])
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -116,7 +127,7 @@ export default function Appointments() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {appointmentRows.map((row) => (
+              {filteredAppointmentRows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-mono text-xs">{row.id}</TableCell>
                   <TableCell className="font-medium">{row.patient}</TableCell>
