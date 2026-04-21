@@ -17,6 +17,7 @@ router.get('/doctors', pharmacyController.getDoctors);
 router.patch('/orders/:id', pharmacyController.patchOrder);
 
 router.get('/inventory', pharmacyController.getInventory);
+router.post('/inventory', pharmacyController.postInventory);
 router.patch('/inventory/:id', pharmacyController.patchInventory);
 
 router.get('/history', pharmacyController.getHistory);

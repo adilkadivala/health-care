@@ -20,6 +20,15 @@ router.get('/walk-ins', receptionController.getWalkIns);
 router.post('/walk-ins', receptionController.postWalkIn);
 router.patch('/walk-ins/:id', receptionController.patchWalkIn);
 router.delete('/walk-ins/:id', receptionController.deleteWalkIn);
+// Backward-compatible aliases for clients using alternate path styles
+router.get('/walkins', receptionController.getWalkIns);
+router.post('/walkins', receptionController.postWalkIn);
+router.patch('/walkins/:id', receptionController.patchWalkIn);
+router.delete('/walkins/:id', receptionController.deleteWalkIn);
+router.get('/walk-in', receptionController.getWalkIns);
+router.post('/walk-in', receptionController.postWalkIn);
+router.patch('/walk-in/:id', receptionController.patchWalkIn);
+router.delete('/walk-in/:id', receptionController.deleteWalkIn);
 
 router.get('/billing', receptionController.getBilling);
 router.post('/transactions', receptionController.postTransaction);

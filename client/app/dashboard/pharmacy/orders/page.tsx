@@ -92,6 +92,16 @@ export default function Orders() {
       })),
     [orders],
   )
+  const filteredMapped = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return mapped
+    return mapped.filter(
+      (order) =>
+        order.id.toLowerCase().includes(term) ||
+        order.supplier.toLowerCase().includes(term) ||
+        order.status.toLowerCase().includes(term),
+    )
+  }, [mapped, search])
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -182,7 +192,7 @@ export default function Orders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mapped.map((order) => (
+              {filteredMapped.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-mono text-xs">{order.id}</TableCell>
                   <TableCell className="font-medium">{order.supplier}</TableCell>

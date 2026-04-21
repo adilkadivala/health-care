@@ -54,6 +54,23 @@ export function ChartAreaInteractive() {
   const [timeRange, setTimeRange] = React.useState("90d")
   const [data, setData] = React.useState(chartData)
 
+  const fallbackPoints = React.useMemo(() => {
+    const days = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90
+    const points: Array<{ date: string; desktop: number; mobile: number }> = []
+    const start = new Date()
+    start.setDate(start.getDate() - (days - 1))
+    for (let i = 0; i < days; i += 1) {
+      const current = new Date(start)
+      current.setDate(start.getDate() + i)
+      points.push({
+        date: current.toISOString().slice(0, 10),
+        desktop: 0,
+        mobile: 0,
+      })
+    }
+    return points
+  }, [timeRange])
+
   React.useEffect(() => {
     if (isMobile) {
       setTimeRange("7d")
@@ -88,7 +105,9 @@ export function ChartAreaInteractive() {
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={setTimeRange}
+            onValueChange={(value) => {
+              if (value) setTimeRange(value)
+            }}
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
           >
@@ -123,7 +142,7 @@ export function ChartAreaInteractive() {
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={data}>
+          <AreaChart data={data.length ? data : fallbackPoints}>
             <defs>
               <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
                 <stop

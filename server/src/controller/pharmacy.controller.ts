@@ -136,6 +136,15 @@ export const patchInventory = async (req: AuthRequest, res: Response) => {
     fail(e, res);
   }
 };
+export const postInventory = async (req: AuthRequest, res: Response) => {
+  const id = userId(req, res);
+  if (!id) return;
+  try {
+    res.status(201).json(await pharmacyService.createInventoryItem(id, req.body));
+  } catch (e) {
+    fail(e, res);
+  }
+};
 export const getHistory = async (req: AuthRequest, res: Response) => {
   const id = userId(req, res);
   if (!id) return;

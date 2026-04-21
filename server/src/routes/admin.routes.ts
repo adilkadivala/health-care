@@ -13,6 +13,8 @@ router.get('/overview/trends', adminController.getOverviewTrends);
 
 router.get('/users', adminController.getUsers);
 router.patch('/users/:id/role', adminController.patchUserRole);
+router.patch('/users/:id/status', adminController.patchUserStatus);
+router.delete('/users/:id', adminController.deleteUser);
 
 router.get('/financial-report', adminController.getFinancialReport);
 router.get('/activity', adminController.getActivity);

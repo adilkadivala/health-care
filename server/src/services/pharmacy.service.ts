@@ -212,6 +212,43 @@ export async function patchInventoryItem(userId: string, id: string, body: { sto
   return { id: updated.id, stockQuantity: updated.stockQuantity, unitPrice: updated.unitPrice };
 }
 
+export async function createInventoryItem(
+  userId: string,
+  body: {
+    name: string;
+    stockQuantity: number;
+    unitPrice?: number;
+    brandName?: string | null;
+    requiresPrescription?: boolean;
+  },
+) {
+  await requirePharmacist(userId);
+  const name = body.name?.trim();
+  if (!name) throw new Error("Medicine name is required");
+  if (!Number.isFinite(body.stockQuantity) || body.stockQuantity < 0) {
+    throw new Error("Valid stock quantity is required");
+  }
+  const created = await prisma.medication.create({
+    data: {
+      name,
+      stockQuantity: Math.trunc(body.stockQuantity),
+      unitPrice:
+        body.unitPrice !== undefined && Number.isFinite(body.unitPrice)
+          ? body.unitPrice
+          : 0,
+      brandName: body.brandName?.trim() || null,
+      requiresPrescription: body.requiresPrescription ?? true,
+    },
+  });
+  return {
+    id: created.id,
+    name: created.name,
+    stockQuantity: created.stockQuantity,
+    unitPrice: created.unitPrice,
+    updatedAt: created.updatedAt.toISOString(),
+  };
+}
+
 export async function getHistory(userId: string) {
   await requirePharmacist(userId);
   const [dispensed, cancelled] = await Promise.all([

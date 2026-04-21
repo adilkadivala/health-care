@@ -46,6 +46,11 @@ const lowStockMeds = [
 
 export default function Overview() {
   const [pendingPrescriptions, setPendingPrescriptions] = useState<PharmacyOrdersResponse["orders"]>([])
+  const [rxSearchTerm, setRxSearchTerm] = useState("")
+  const [newOrderPatient, setNewOrderPatient] = useState("")
+  const [newOrderMedication, setNewOrderMedication] = useState("")
+  const [newOrderQuantity, setNewOrderQuantity] = useState("")
+  const [reorderQuantities, setReorderQuantities] = useState<Record<string, string>>({})
 
   const loadOverviewData = async () => {
     try {
@@ -95,6 +100,59 @@ export default function Overview() {
       toast.error("Failed to update order status.")
     }
   }
+  const handleSearchRx = async () => {
+    const term = rxSearchTerm.trim()
+    if (!term) {
+      await loadOverviewData()
+      toast.success("Showing latest prescriptions.")
+      return
+    }
+    try {
+      const data = await api.get<PharmacyOrdersResponse>(`/pharmacy/orders?q=${encodeURIComponent(term)}`)
+      setPendingPrescriptions(data.orders)
+      toast.success(`Found ${data.orders.length} matching prescription(s).`)
+    } catch {
+      toast.error("Failed to search prescriptions.")
+    }
+  }
+  const handleCreateManualOrder = async () => {
+    const qty = Number(newOrderQuantity)
+    if (!newOrderPatient.trim() || !newOrderMedication.trim() || Number.isNaN(qty) || qty <= 0) {
+      toast.error("Patient, medication and quantity are required.")
+      return
+    }
+    try {
+      await api.post("/pharmacy/orders", {
+        supplier: `Manual Rx: ${newOrderPatient.trim()}`,
+        itemName: newOrderMedication.trim(),
+        itemCount: qty,
+      })
+      setNewOrderPatient("")
+      setNewOrderMedication("")
+      setNewOrderQuantity("")
+      await loadOverviewData()
+      toast.success("New order created successfully.")
+    } catch {
+      toast.error("Failed to create new order.")
+    }
+  }
+  const handleReorder = async (itemId: string, itemName: string) => {
+    const qty = Number(reorderQuantities[itemId] ?? "50")
+    if (Number.isNaN(qty) || qty <= 0) {
+      toast.error("Enter a valid reorder quantity.")
+      return
+    }
+    try {
+      await api.post("/pharmacy/orders", {
+        supplier: "Auto Reorder",
+        itemName,
+        itemCount: qty,
+      })
+      toast.success("Requisition sent successfully.")
+    } catch {
+      toast.error("Failed to send requisition.")
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -118,9 +176,13 @@ export default function Overview() {
                 <DialogTitle>Search Prescriptions</DialogTitle>
                 <DialogDescription>Look up by Rx ID, Patient Name, or Medication.</DialogDescription>
               </DialogHeader>
-              <Input placeholder="Enter details..." />
+              <Input
+                placeholder="Enter details..."
+                value={rxSearchTerm}
+                onChange={(e) => setRxSearchTerm(e.target.value)}
+              />
               <DialogFooter>
-                <Button>Search</Button>
+                <Button onClick={handleSearchRx}>Search</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -140,15 +202,32 @@ export default function Overview() {
               <div className="space-y-4 py-2">
                 <div className="grid gap-2">
                   <Label>Patient Name</Label>
-                  <Input placeholder="John Doe" />
+                  <Input
+                    placeholder="John Doe"
+                    value={newOrderPatient}
+                    onChange={(e) => setNewOrderPatient(e.target.value)}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label>Medication Details</Label>
-                  <Input placeholder="e.g. Paracetamol 500mg" />
+                  <Input
+                    placeholder="e.g. Paracetamol 500mg"
+                    value={newOrderMedication}
+                    onChange={(e) => setNewOrderMedication(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Quantity</Label>
+                  <Input
+                    type="number"
+                    placeholder="1"
+                    value={newOrderQuantity}
+                    onChange={(e) => setNewOrderQuantity(e.target.value)}
+                  />
                 </div>
               </div>
               <DialogFooter>
-                <Button className="bg-amber-600">Submit Order</Button>
+                <Button className="bg-amber-600" onClick={handleCreateManualOrder}>Submit Order</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -296,10 +375,22 @@ export default function Overview() {
                       </DialogHeader>
                       <div className="py-2">
                         <Label>Quantity Strategy (Boxes)</Label>
-                        <Input type="number" defaultValue={50} className="max-w-[150px] mt-2" />
+                        <Input
+                          type="number"
+                          value={reorderQuantities[item.id] ?? "50"}
+                          onChange={(e) =>
+                            setReorderQuantities((prev) => ({ ...prev, [item.id]: e.target.value }))
+                          }
+                          className="max-w-[150px] mt-2"
+                        />
                       </div>
                       <DialogFooter>
-                        <Button className="bg-rose-600 hover:bg-rose-700 text-white">Send Requisition</Button>
+                        <Button
+                          className="bg-rose-600 hover:bg-rose-700 text-white"
+                          onClick={() => handleReorder(item.id, item.name)}
+                        >
+                          Send Requisition
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
